@@ -173,15 +173,16 @@ function draw() {
 }
 function fit() { const vis = G.nodes.filter(visible); if (!vis.length) return;
   const xs = vis.map(n => n.x), ys = vis.map(n => n.y), minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
-  const pad = $('group').value === 'none' ? 90 : 190;
-  const sw = (W - pad) / Math.max(maxx - minx, 1), sh = (H - pad) / Math.max(maxy - miny, 1); scale = Math.max(0.2, Math.min(2.5, Math.min(sw, sh)));
-  tx = -((minx + maxx) / 2) * scale; ty = -((miny + maxy) / 2) * scale; }
+  const pad = $('group').value === 'none' ? 90 : 190, ch = card.classList.contains('on') ? card.offsetHeight + 20 : 0;
+  const sw = (W - pad) / Math.max(maxx - minx, 1), sh = (H - pad - ch) / Math.max(maxy - miny, 1); scale = Math.max(0.2, Math.min(2.5, Math.min(sw, sh)));
+  tx = -((minx + maxx) / 2) * scale; ty = -((miny + maxy) / 2) * scale - ch / 2; }
 function loop() { step(); if (!touched && ++ticks % 20 === 0 && ticks < 400) fit(); draw(); requestAnimationFrame(loop); }
 function resize() { W = cv.width = cw.clientWidth; H = cv.height = cw.clientHeight; }
 function pick(mx, my) { const x = (mx - W / 2 - tx) / scale, y = (my - H / 2 - ty) / scale; let best = null, bd = 1e9;
   for (const n of G.nodes.filter(visible)) { const d = Math.hypot(n.x - x, n.y - y); if (d < radius(n) + 4 && d < bd) { best = n; bd = d; } } return best; }
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-function relations(n) { const rel = {}; G.edges.filter(e => e.s === n.id || e.t === n.id).forEach(e => { const o = e.s === n.id ? e.t : e.s; (rel[o] = rel[o] || new Set()); (e.rels || [e.rel]).forEach(r => rel[o].add(e.s === n.id ? r : r + ' (in)')); }); return rel; }
+function relations(n) { const rel = {}; G.edges.filter(e => e.s === n.id || e.t === n.id).forEach(e => { const o = e.s === n.id ? e.t : e.s; (rel[o] = rel[o] || new Set()); (e.rels || [e.rel]).forEach(r => rel[o].add(e.s === n.id ? r : r + ' (in)')); });
+  for (const o in rel) { const s = rel[o]; [...s].forEach(r => { if (r.endsWith(' (in)') && s.has(r.slice(0, -5))) s.delete(r); }); } return rel; }
 function clip(n) {
   const rel = relations(n), lines = [n.title, `${n.id}${n.repo ? ' · ' + n.repo : ''}`];
   if (n.type === 'work') lines.push(`${n.stage}${n.priority ? ' · P' + n.priority + (n.priority_label ? ' ' + n.priority_label : '') : ''} · updated ${n.updated}`);

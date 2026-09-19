@@ -74,7 +74,7 @@ read verb takes `--json`:
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
 | `crn validate` | `iwe schema validate`; exit 1 on any violation | no |
 | `crn systems` | system nodes with how many work nodes point at them | no |
-| `crn graph [--open]` | a self-contained local viewer: group into sub-graphs by repo or system, colour by priority or stage, size by activity, click a node for its state and links; `--format json` or `gexf` for other tools | `.cairn/graph.*` only |
+| `crn graph [--open]` | a self-contained local viewer: group into sub-graphs by repo or system, colour by priority or stage, size by activity; click a node to focus on its neighbours and get a card with a "copy for Claude" button; PRs from the last sweep appear as square nodes linked to the issues their titles name; `--format json` or `gexf` for other tools | `.cairn/graph.*` only |
 | `crn init <dir>` / `crn doctor` | scaffold a bundle and print the wiring steps / check python, iwe, gh, env, config, schemas, hook, skill | a new bundle / no |
 
 Two writers never touch the same field. You (or your agent, on your say-so) own `state`, `stage`,
