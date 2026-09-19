@@ -7,102 +7,135 @@
 <style>
   :root { --bg:#0f1115; --fg:#e6e6e6; --muted:#8b93a7; --panel:#171a21; --line:#2a2f3a; --accent:#7aa2f7;
           --p1:#f7768e; --p2:#ff9e64; --p3:#e0af68; --p4:#9ece6a; --none:#565f89; --sys:#7dcfff; --person:#bb9af7;
-          --active:#9ece6a; --blocked:#f7768e; --parked:#e0af68; --done:#565f89; }
+          --review:#73daca; --mine:#c0caf5; --active:#9ece6a; --blocked:#f7768e; --parked:#e0af68; --done:#565f89; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px/1.4 system-ui, sans-serif; }
-  #top { display:flex; gap:12px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap; }
-  #top label { color:var(--muted); display:flex; gap:4px; align-items:center; }
-  select, input[type=search] { background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
-  #wrap { display:flex; height:calc(100% - 46px); }
+  #wrap { display:flex; height:100%; }
   #cw { flex:1; min-width:0; position:relative; }
   canvas { position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab; }
-  #side { width:340px; border-left:1px solid var(--line); background:var(--panel); padding:12px; overflow:auto; }
-  #side h2 { margin:0 0 4px; font-size:15px; }
-  #side .k { color:var(--muted); font-size:12px; }
-  #side .state { margin:8px 0; padding:8px; border-left:3px solid var(--accent); background:var(--bg); }
-  #side ul { padding-left:18px; margin:4px 0; }
-  #legend { display:flex; gap:10px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
-  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+  #side { width:300px; border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:14px; }
+  #side h1 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
+  #side h1 small { color:var(--muted); font-weight:normal; font-size:12px; }
+  fieldset { border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin:0; display:flex; flex-direction:column; gap:6px; }
+  legend { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; padding:0 4px; }
+  label { color:var(--muted); display:flex; gap:6px; align-items:center; justify-content:space-between; }
+  label.chk { justify-content:flex-start; }
+  select, input[type=search] { background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; font:inherit; }
+  select { min-width:150px; }
+  input[type=search] { width:100%; box-sizing:border-box; }
+  #legend { display:flex; flex-direction:column; gap:4px; color:var(--muted); font-size:12px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .line { display:inline-block; width:14px; height:2px; margin-right:6px; vertical-align:middle; }
+  .hint { color:var(--muted); font-size:12px; }
   code { background:var(--bg); padding:1px 4px; border-radius:3px; }
-  .chk { display:inline-flex; gap:8px; white-space:nowrap; }
-  .chk span { display:inline-flex; gap:8px; }
-  .chk label { gap:2px; display:inline-flex; align-items:center; }
+  #card { position:absolute; left:14px; bottom:14px; max-width:460px; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; box-shadow:0 8px 30px rgba(0,0,0,.5); display:none; }
+  #card.on { display:block; }
+  #card h2 { margin:0 0 4px; font-size:14px; padding-right:24px; }
+  #card .k { color:var(--muted); font-size:12px; }
+  #card .state { margin:8px 0; padding:8px; border-left:3px solid var(--accent); background:var(--bg); }
+  #card ul { padding-left:18px; margin:4px 0; max-height:120px; overflow:auto; }
+  #card a { color:var(--accent); }
+  #card .x { position:absolute; right:10px; top:8px; cursor:pointer; color:var(--muted); }
+  #card .btns { display:flex; gap:8px; margin-top:8px; }
+  button { background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:4px 10px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  #stats { color:var(--muted); font-size:12px; }
 </style>
 </head>
 <body>
-<div id="top">
-  <strong>Cairn</strong>
-  <label>group by <select id="group"><option value="none">nothing</option><option value="repo">repo</option><option value="system">system</option><option value="stage">stage</option><option value="priority">priority</option></select></label>
-  <label>colour by <select id="colour"><option value="priority">priority</option><option value="stage">stage</option><option value="type">type</option><option value="repo">repo</option></select></label>
-  <label>size by <select id="size"><option value="logs">activity (log lines)</option><option value="links">links</option><option value="none">same</option></select></label>
-  <label class="chk">stage <span id="stages"></span></label>
-  <label><input type="checkbox" id="showsys" checked> systems</label>
-  <label><input type="checkbox" id="showpeople" checked> people</label>
-  <input type="search" id="q" placeholder="find… (title, state, key)" size="28">
-  <span id="legend"></span>
-  <span id="stats" style="color:var(--muted); margin-left:auto"></span>
+<div id="wrap">
+  <div id="cw">
+    <canvas id="c"></canvas>
+    <div id="card"></div>
+  </div>
+  <div id="side">
+    <h1>Cairn <small id="stats"></small></h1>
+    <fieldset><legend>view</legend>
+      <label>group by <select id="group"><option value="none">nothing</option><option value="repo">repo</option><option value="system">system</option><option value="stage">stage</option><option value="priority">priority</option></select></label>
+      <label>colour by <select id="colour"><option value="priority">priority</option><option value="stage">stage</option><option value="repo">repo</option><option value="type">type</option></select></label>
+      <label>size by <select id="size"><option value="logs">activity</option><option value="links">links</option><option value="none">same</option></select></label>
+      <input type="search" id="q" placeholder="find… title, state, key">
+    </fieldset>
+    <fieldset><legend>show</legend>
+      <div id="stages"></div>
+      <label class="chk"><input type="checkbox" id="showsys" checked> systems</label>
+      <label class="chk"><input type="checkbox" id="showpeople" checked> people</label>
+      <label class="chk"><input type="checkbox" id="showprs" checked> pull requests <span class="hint" id="prcount"></span></label>
+      <label class="chk"><input type="checkbox" id="focus" checked> focus on selection</label>
+    </fieldset>
+    <fieldset><legend>legend</legend><div id="legend"></div></fieldset>
+    <div class="hint">Click a node for its card and to focus on its neighbours. Click empty space to clear. Drag to move, wheel to zoom, double-click to re-fit.</div>
+    <div class="hint" id="stamp"></div>
+  </div>
 </div>
-<div id="wrap"><div id="cw"><canvas id="c"></canvas></div><div id="side"><h2>Cairn graph</h2><div class="k">Click a node. Drag to move. Wheel to zoom. Double-click empty space to reset.</div></div></div>
 <script>
 const G = /*GRAPH_JSON*/null;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const PAL = ["#7aa2f7","#9ece6a","#e0af68","#f7768e","#bb9af7","#7dcfff","#ff9e64","#73daca","#c0caf5","#ff007c"];
-const cv = document.getElementById('c'), ctx = cv.getContext('2d'), side = document.getElementById('side');
-let W, H, tx = 0, ty = 0, scale = 1, drag = null, hover = null, selected = null, raf = null;
+const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d'), cw = $('cw'), card = $('card');
+let W, H, tx = 0, ty = 0, scale = 1, drag = null, hover = null, selected = null, touched = false, ticks = 0;
 const byId = Object.fromEntries(G.nodes.map(n => [n.id, n]));
 G.nodes.forEach(n => { n.x = (Math.random() - .5) * 600; n.y = (Math.random() - .5) * 600; n.vx = 0; n.vy = 0; n.links = 0; });
 G.edges.forEach(e => { byId[e.s].links++; byId[e.t].links++; });
+const nb = {}; G.edges.forEach(e => { (nb[e.s] = nb[e.s] || new Set()).add(e.t); (nb[e.t] = nb[e.t] || new Set()).add(e.s); });
 const stages = [...new Set(G.nodes.filter(n => n.stage).map(n => n.stage))];
-const stEl = document.getElementById('stages');
-stages.forEach(s => { const l = document.createElement('label'); l.innerHTML = `<input type="checkbox" data-stage="${s}" ${s === 'done' ? '' : 'checked'}> ${s}`; stEl.appendChild(l); });
+stages.forEach(s => { const l = document.createElement('label'); l.className = 'chk'; l.innerHTML = `<input type="checkbox" data-stage="${s}" ${s === 'done' ? '' : 'checked'}> ${s}`; $('stages').appendChild(l); });
+const prs = G.nodes.filter(n => n.type === 'pr'); $('prcount').textContent = prs.length ? `(${prs.filter(p => p.role === 'review').length} to review · ${prs.filter(p => p.role === 'mine').length} mine)` : '(run crn sweep)';
+$('stamp').textContent = (G.generated_at ? `generated ${G.generated_at}` : '') + (G.swept_at ? ` · sweep ${G.swept_at.slice(0, 16)}` : '');
+
 function visible(n) {
-  if (n.type === 'system' && !document.getElementById('showsys').checked) return false;
-  if (n.type === 'person' && !document.getElementById('showpeople').checked) return false;
-  if (n.type === 'work') { const c = stEl.querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
-  const q = document.getElementById('q').value.trim().toLowerCase();
-  if (q && !(n.title + ' ' + n.state + ' ' + n.id).toLowerCase().includes(q)) return false;
+  if (n.type === 'system' && !$('showsys').checked) return false;
+  if (n.type === 'person' && !$('showpeople').checked) return false;
+  if (n.type === 'pr' && !$('showprs').checked) return false;
+  if (n.type === 'work') { const c = $('stages').querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
+  const q = $('q').value.trim().toLowerCase();
+  if (q && !(n.title + ' ' + (n.state || '') + ' ' + n.id).toLowerCase().includes(q)) return false;
+  if (selected && $('focus').checked && n !== selected && !(nb[selected.id] || new Set()).has(n.id)) return false;
   return true;
 }
 function groupKey(n) {
-  const g = document.getElementById('group').value;
-  if (g === 'repo') return n.repo || (n.type === 'system' ? 'systems' : 'people');
-  if (g === 'system') return n.type === 'system' ? n.id : (n.systems[0] ? 'systems/' + n.systems[0] : 'none');
+  const g = $('group').value;
+  if (g === 'repo') return n.repo || (n.type === 'system' ? 'systems' : n.type === 'person' ? 'people' : 'other');
+  if (g === 'system') return n.type === 'system' ? n.id : (n.systems && n.systems[0] ? 'systems/' + n.systems[0] : n.type === 'work' ? 'none' : n.type);
   if (g === 'stage') return n.stage || n.type;
   if (g === 'priority') return n.priority ? 'P' + n.priority : (n.type === 'work' ? 'unset' : n.type);
   return null;
 }
+const hub = g => ['systems', 'people', 'system', 'person', 'pr', 'other'].includes(g);
 const colourCache = {};
 function colour(n) {
-  const c = document.getElementById('colour').value;
+  const c = $('colour').value;
   if (n.type === 'system') return css('--sys'); if (n.type === 'person') return css('--person');
+  if (n.type === 'pr') return n.role === 'review' ? css('--review') : css('--mine');
   if (c === 'priority') return n.priority ? css('--p' + Math.min(n.priority, 4)) : css('--none');
   if (c === 'stage') return css('--' + (n.stage || 'none'));
   if (c === 'type') return css('--accent');
   const k = n.repo || 'local'; if (!(k in colourCache)) colourCache[k] = PAL[Object.keys(colourCache).length % PAL.length]; return colourCache[k];
 }
 function radius(n) {
-  const s = document.getElementById('size').value; const base = n.type === 'work' ? 6 : 5;
-  if (s === 'logs') return base + Math.min(n.logs, 20) * 0.6; if (s === 'links') return base + Math.min(n.links, 20) * 0.7; return base;
+  const s = $('size').value; const base = n.type === 'work' ? 6 : n.type === 'pr' ? 4 : 5;
+  if (s === 'logs') return base + Math.min(n.logs || 0, 20) * 0.6; if (s === 'links') return base + Math.min(n.links, 20) * 0.7; return base;
 }
 function legend() {
-  const c = document.getElementById('colour').value, el = document.getElementById('legend'); el.innerHTML = '';
+  const c = $('colour').value, el = $('legend'); el.innerHTML = '';
   const item = (col, txt) => el.insertAdjacentHTML('beforeend', `<span><i class="dot" style="background:${col}"></i>${txt}</span>`);
-  if (c === 'priority') { Object.entries(G.legend).forEach(([k, v]) => item(css('--p' + Math.min(k, 4)), 'P' + k + ' ' + v)); item(css('--none'), 'unset'); }
+  if (c === 'priority') { Object.entries(G.legend || {}).forEach(([k, v]) => item(css('--p' + Math.min(k, 4)), 'P' + k + ' ' + v)); item(css('--none'), 'no priority'); }
   else if (c === 'stage') ['active', 'blocked', 'parked', 'done'].forEach(s => item(css('--' + s), s));
   else if (c === 'repo') Object.entries(colourCache).forEach(([k, v]) => item(v, k));
+  else item(css('--accent'), 'work');
   item(css('--sys'), 'system'); item(css('--person'), 'person');
+  if (prs.length) { item(css('--review'), 'PR requesting your review'); item(css('--mine'), 'your open PR'); }
+  el.insertAdjacentHTML('beforeend', `<span><i class="line" style="background:${css('--blocked')}"></i>blocked by</span><span><i class="line" style="background:${css('--person')}"></i>waits on</span><span><i class="line" style="background:rgba(139,147,167,0.6)"></i>about / links</span>`);
 }
-// ---- force simulation (no dependencies)
 const centers = {};
 function step() {
-  const vis = G.nodes.filter(visible); const gk = document.getElementById('group').value;
-  const hub = g => g === 'systems' || g === 'people' || g === 'system' || g === 'person';
+  const vis = G.nodes.filter(visible); const gk = $('group').value;
   const groups = [...new Set(vis.map(groupKey))].filter(x => x !== null && !hub(x));
-  const sizes = Object.fromEntries(groups.map(g => [g, vis.filter(n => groupKey(n) === g).length]));
   const R = 140 + 26 * Math.sqrt(vis.length);
-  groups.forEach((g, i) => { const a = (i / groups.length) * Math.PI * 2 - Math.PI / 2; centers[g] = { x: Math.cos(a) * R, y: Math.sin(a) * R, n: sizes[g] }; });
+  groups.forEach((g, i) => { const a = (i / groups.length) * Math.PI * 2 - Math.PI / 2; centers[g] = { x: Math.cos(a) * R, y: Math.sin(a) * R }; });
   for (const n of vis) {
-    const g = groupKey(n); const c = gk === 'none' || hub(g) ? { x: 0, y: 0 } : centers[g];
-    const k = gk === 'none' ? 0.002 : hub(g) ? 0.006 : 0.05;
+    const g = groupKey(n); const c = gk === 'none' || hub(g) || !centers[g] ? { x: 0, y: 0 } : centers[g];
+    const k = gk === 'none' ? 0.002 : (hub(g) || !centers[g]) ? 0.006 : 0.05;
     n.vx += (c.x - n.x) * k; n.vy += (c.y - n.y) * k;
   }
   for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
@@ -119,7 +152,7 @@ function step() {
 }
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); ctx.translate(W / 2 + tx, H / 2 + ty); ctx.scale(scale, scale);
-  const vis = G.nodes.filter(visible), gk = document.getElementById('group').value;
+  const vis = G.nodes.filter(visible), gk = $('group').value;
   if (gk !== 'none') for (const [g, c] of Object.entries(centers)) {
     const mem = vis.filter(n => groupKey(n) === g); if (!mem.length) continue;
     const cx = mem.reduce((s, n) => s + n.x, 0) / mem.length, cy = mem.reduce((s, n) => s + n.y, 0) / mem.length;
@@ -127,49 +160,61 @@ function draw() {
     ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fillStyle = 'rgba(122,162,247,0.05)'; ctx.fill(); ctx.strokeStyle = 'rgba(122,162,247,0.25)'; ctx.lineWidth = 1 / scale; ctx.stroke();
     ctx.font = `${13 / scale}px system-ui`; ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.fillText(`${g} · ${mem.length}`, cx, cy - rr - 8 / scale); ctx.textAlign = 'left';
   }
-  ctx.lineWidth = 1 / scale;
   for (const e of G.edges) { const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
     const hot = selected && (a === selected || b === selected);
     ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : e.rel === 'waits_on' ? css('--person') : 'rgba(139,147,167,0.3)'; ctx.lineWidth = (hot ? 2 : 1) / scale;
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+  const q = $('q').value.trim(), focused = selected && $('focus').checked;
   for (const n of vis) { const r = radius(n); ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fillStyle = colour(n); ctx.fill();
+    if (n.type === 'pr') { ctx.strokeStyle = colour(n); ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.rect(n.x - r, n.y - r, 2 * r, 2 * r); ctx.stroke(); }
     if (n === selected || n === hover) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.stroke(); }
-    const q = document.getElementById('q').value.trim();
-    if (n.type !== 'work' || scale > 1.7 || n === selected || n === hover || q) { ctx.fillStyle = n.type === 'work' ? css('--fg') : css('--muted'); ctx.font = `${(n.type === 'work' ? 11 : 10) / scale}px system-ui`; ctx.fillText(n.title.length > 34 ? n.title.slice(0, 33) + '…' : n.title, n.x + r + 3, n.y + 4 / scale); } }
-  document.getElementById('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'person').length} people`;
+    if (n.type === 'system' || n.type === 'person' || scale > 1.7 || n === selected || n === hover || q || focused) { ctx.fillStyle = n.type === 'work' || n.type === 'pr' ? css('--fg') : css('--muted'); ctx.font = `${(n.type === 'work' ? 11 : 10) / scale}px system-ui`; ctx.fillText(n.title.length > 34 ? n.title.slice(0, 33) + '…' : n.title, n.x + r + 3, n.y + 4 / scale); } }
+  $('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'pr').length} PRs`;
 }
-let touched = false, ticks = 0;
 function fit() { const vis = G.nodes.filter(visible); if (!vis.length) return;
   const xs = vis.map(n => n.x), ys = vis.map(n => n.y), minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
-  const pad = document.getElementById('group').value === 'none' ? 90 : 190;   // room for hulls and their labels
+  const pad = $('group').value === 'none' ? 90 : 190;
   const sw = (W - pad) / Math.max(maxx - minx, 1), sh = (H - pad) / Math.max(maxy - miny, 1); scale = Math.max(0.2, Math.min(2.5, Math.min(sw, sh)));
   tx = -((minx + maxx) / 2) * scale; ty = -((miny + maxy) / 2) * scale; }
-function loop() { step(); if (!touched && ++ticks % 20 === 0 && ticks < 400) fit(); draw(); raf = requestAnimationFrame(loop); }
-const cw = document.getElementById('cw');
+function loop() { step(); if (!touched && ++ticks % 20 === 0 && ticks < 400) fit(); draw(); requestAnimationFrame(loop); }
 function resize() { W = cv.width = cw.clientWidth; H = cv.height = cw.clientHeight; }
 function pick(mx, my) { const x = (mx - W / 2 - tx) / scale, y = (my - H / 2 - ty) / scale; let best = null, bd = 1e9;
   for (const n of G.nodes.filter(visible)) { const d = Math.hypot(n.x - x, n.y - y); if (d < radius(n) + 4 && d < bd) { best = n; bd = d; } } return best; }
-function show(n) {
-  selected = n; if (!n) return;
-  const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-  const rel = {}; G.edges.filter(e => e.s === n.id || e.t === n.id).forEach(e => { const o = e.s === n.id ? e.t : e.s; (rel[o] = rel[o] || new Set()); (e.rels || [e.rel]).forEach(r => rel[o].add(e.s === n.id ? r : r + ' (in)')); });
-  const linked = Object.entries(rel).map(([o, rs]) => `<li><a href="#" data-id="${esc(o)}">${esc(byId[o].title)}</a> <span class="k">${esc([...rs].join(', '))}</span></li>`).join('');
-  side.innerHTML = `<h2>${esc(n.title)}</h2><div class="k"><code>${esc(n.id)}</code>${n.repo ? ' · ' + esc(n.repo) : ''}</div>` +
-    (n.type === 'work' ? `<div class="k">${esc(n.stage)}${n.priority ? ' · P' + n.priority + ' ' + esc(n.priority_label || '') : ''} · updated ${esc(n.updated)}${n.gh_updated ? ' · gh ' + esc(n.gh_updated) : ''} · ${n.logs} sessions</div>` : '') +
-    `<div class="state">${esc(n.state)}</div>` + (n.env.length ? `<div class="k">env ${esc(n.env.join(', '))}</div>` : '') +
-    (n.resource ? `<div class="k"><a href="${esc(n.resource)}" target="_blank" style="color:var(--accent)">${esc(n.resource)}</a></div>` : '') +
-    `<div class="k" style="margin-top:8px">linked nodes (${Object.keys(rel).length})</div><ul>${linked}</ul>` +
-    `<div class="k" style="margin-top:8px">terminal: <code>crn open ${esc(n.id.split('/')[1])}</code></div>`;
-  side.querySelectorAll('a[data-id]').forEach(a => a.onclick = ev => { ev.preventDefault(); show(byId[a.dataset.id]); });
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function relations(n) { const rel = {}; G.edges.filter(e => e.s === n.id || e.t === n.id).forEach(e => { const o = e.s === n.id ? e.t : e.s; (rel[o] = rel[o] || new Set()); (e.rels || [e.rel]).forEach(r => rel[o].add(e.s === n.id ? r : r + ' (in)')); }); return rel; }
+function clip(n) {
+  const rel = relations(n), lines = [n.title, `${n.id}${n.repo ? ' · ' + n.repo : ''}`];
+  if (n.type === 'work') lines.push(`${n.stage}${n.priority ? ' · P' + n.priority + (n.priority_label ? ' ' + n.priority_label : '') : ''} · updated ${n.updated}`);
+  if (n.state) lines.push(`state: ${n.state}`);
+  if (n.resource || n.url) lines.push(n.resource || n.url);
+  if (Object.keys(rel).length) lines.push('linked: ' + Object.entries(rel).map(([o, rs]) => `${byId[o].title} (${[...rs].join(', ')})`).join('; '));
+  lines.push(n.type === 'work' ? `crn open ${n.id.split('/')[1]}` : n.type === 'pr' ? `gh pr view ${n.url}` : `crn open ${n.id}`);
+  return lines.join('\n');
 }
-cv.addEventListener('mousedown', e => { touched = true; const n = pick(e.offsetX, e.offsetY); if (n) { drag = n; } else { drag = { pan: true, x: e.offsetX, y: e.offsetY }; } });
-cv.addEventListener('mousemove', e => { if (drag && drag.pan) { tx += e.offsetX - drag.x; ty += e.offsetY - drag.y; drag.x = e.offsetX; drag.y = e.offsetY; }
+function show(n) {
+  selected = n; touched = false; ticks = 0;
+  if (!n) { card.classList.remove('on'); return; }
+  const rel = relations(n);
+  const linked = Object.entries(rel).map(([o, rs]) => `<li><a href="#" data-id="${esc(o)}">${esc(byId[o].title)}</a> <span class="k">${esc([...rs].join(', '))}</span></li>`).join('');
+  card.innerHTML = `<span class="x" title="close">✕</span><h2>${esc(n.title)}</h2><div class="k"><code>${esc(n.id)}</code>${n.repo ? ' · ' + esc(n.repo) : ''}${n.type === 'pr' ? ' · ' + (n.role === 'review' ? 'requests your review' : 'your open PR') + ' · ' + esc(n.updated) : ''}</div>` +
+    (n.type === 'work' ? `<div class="k">${esc(n.stage)}${n.priority ? ' · P' + n.priority + ' ' + esc(n.priority_label || '') : ''} · updated ${esc(n.updated)}${n.gh_updated ? ' · gh ' + esc(n.gh_updated) : ''} · ${n.logs} sessions</div>` : '') +
+    (n.state ? `<div class="state">${esc(n.state)}</div>` : '') + (n.env && n.env.length ? `<div class="k">env ${esc(n.env.join(', '))}</div>` : '') +
+    (n.resource ? `<div class="k"><a href="${esc(n.resource)}" target="_blank">${esc(n.resource)}</a></div>` : n.url ? `<div class="k"><a href="${esc(n.url)}" target="_blank">${esc(n.url)}</a></div>` : '') +
+    `<div class="k" style="margin-top:8px">linked nodes (${Object.keys(rel).length})</div><ul>${linked}</ul>` +
+    `<div class="btns"><button id="copy">copy for Claude</button><button id="unfocus">${$('focus').checked ? 'show all' : 'focus'}</button></div>`;
+  card.classList.add('on');
+  card.querySelector('.x').onclick = () => show(null);
+  card.querySelectorAll('a[data-id]').forEach(a => a.onclick = ev => { ev.preventDefault(); show(byId[a.dataset.id]); });
+  $('copy').onclick = () => { navigator.clipboard.writeText(clip(n)).then(() => { $('copy').textContent = 'copied'; setTimeout(() => $('copy').textContent = 'copy for Claude', 1200); }); };
+  $('unfocus').onclick = () => { $('focus').checked = !$('focus').checked; show(n); };
+}
+cv.addEventListener('mousedown', e => { touched = true; const n = pick(e.offsetX, e.offsetY); drag = n ? n : { pan: true, x: e.offsetX, y: e.offsetY, moved: false }; });
+cv.addEventListener('mousemove', e => { if (drag && drag.pan) { drag.moved = true; tx += e.offsetX - drag.x; ty += e.offsetY - drag.y; drag.x = e.offsetX; drag.y = e.offsetY; }
   else if (drag) { drag.x = (e.offsetX - W / 2 - tx) / scale; drag.y = (e.offsetY - H / 2 - ty) / scale; drag.vx = drag.vy = 0; } else hover = pick(e.offsetX, e.offsetY); });
-cv.addEventListener('mouseup', e => { if (drag && !drag.pan) show(drag); drag = null; });
-cv.addEventListener('click', e => { const n = pick(e.offsetX, e.offsetY); if (n) show(n); });
+cv.addEventListener('mouseup', e => { if (drag && !drag.pan) show(drag); else if (drag && drag.pan && !drag.moved) show(null); drag = null; });
 cv.addEventListener('dblclick', e => { if (!pick(e.offsetX, e.offsetY)) { touched = false; ticks = 0; } });
 cv.addEventListener('wheel', e => { e.preventDefault(); touched = true; scale = Math.max(0.2, Math.min(4, scale * (e.deltaY < 0 ? 1.1 : 0.9))); }, { passive: false });
-document.querySelectorAll('#top select, #top input').forEach(el => el.addEventListener('input', () => { Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); touched = false; ticks = 0; }));
+document.querySelectorAll('#side select, #side input').forEach(el => el.addEventListener('input', () => { Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); touched = false; ticks = 0; }));
 window.addEventListener('resize', resize); resize(); legend(); loop();
 </script>
 </body>

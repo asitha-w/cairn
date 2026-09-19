@@ -73,6 +73,8 @@ def sweep(bundle, cfg, fixture=None, create=False, as_json=False):
     result = {"items": len(issues), "changed": changed, "new": new, "created": created,
               "prs_review": sorted(prs_review, key=lambda p: p["updated"], reverse=True),
               "prs_mine": sorted(prs_mine, key=lambda p: p["updated"], reverse=True)}
+    (bundle / ".cairn").mkdir(exist_ok=True)
+    (bundle / ".cairn" / "sweep.json").write_text(json.dumps({"at": NOW.isoformat(timespec="seconds"), **result}, ensure_ascii=False))
     if as_json: print(json.dumps(result, indent=1, ensure_ascii=False)); return 0
     print(f"sweep: {result['items']} items · {len(changed)} node(s) updated · {len(new)} without a node")
     for c in changed: print(f"  updated {c['key']}: gh_state={c['state']} gh_updated={str(c['updated'])[:10]}" + (f" priority P{c['proposed_priority']} (proposed)" if c.get("proposed_priority") else ""))

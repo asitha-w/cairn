@@ -41,8 +41,36 @@ def build(bundle, cfg, include_done=False):
             if tgt.startswith(".."): continue            # a link outside the bundle (an artifact) is not a graph edge
             tk = tgt[:-3] if tgt.endswith(".md") else tgt
             if tk in keys and tk != k: edge(k, tk, "links")
+    # pull requests from the last sweep, if any: to review, and yours
+    sw = bundle / ".cairn" / "sweep.json"; swept_at = None
+    if sw.exists():
+        d = json.loads(sw.read_text()); swept_at = d.get("at")
+        by_res = {str(n.get("resource", "")).rstrip("/"): key_of(n) for n in allnodes if fm(n).get("type") == "work"}
+        by_issue = {}   # (repo, number) -> work key, from resource URLs
+        for n in allnodes:
+            mm = ISSUE_URL.search(str(fm(n).get("resource", "")))
+            if mm and fm(n).get("type") == "work": by_issue[(mm.group(2), int(mm.group(3)))] = key_of(n)
+        REF = re.compile(r"(?:([A-Za-z0-9_.-]+)#|(?<![\w/])#)(\d+)\b")
+        def pr_targets(p):
+            out = set()
+            wk = by_res.get(p["url"].rstrip("/"))
+            if wk: out.add((wk, "is"))
+            for repo_tok, num in REF.findall(p["title"]):
+                num = int(num)
+                if repo_tok:
+                    hits = [k for (r, nn), k in by_issue.items() if nn == num and (r == repo_tok or r.endswith(repo_tok) or repo_tok in r)]
+                else:
+                    hits = [k for (r, nn), k in by_issue.items() if nn == num and r == p["repo"]]
+                if len(hits) == 1: out.add((hits[0], "for"))
+            return out
+        for role, lst in (("review", d.get("prs_review", [])), ("mine", d.get("prs_mine", []))):
+            for p in lst:
+                pid = f"pr:{p['owner']}/{p['repo']}#{p['number']}"
+                out_nodes.append({"id": pid, "type": "pr", "role": role, "title": f"PR #{p['number']} {p['title']}", "repo": f"{p['owner']}/{p['repo']}",
+                                  "updated": str(p.get("updated", ""))[:10], "url": p["url"], "state": None, "logs": 0, "env": [], "systems": [], "people": []})
+                for wk, rel in pr_targets(p): edges.append({"s": pid, "t": wk, "rel": rel})
     ids = {n["id"] for n in out_nodes}
-    RANK = {"blocked_by": 0, "waits_on": 1, "about": 2, "links": 3}
+    RANK = {"blocked_by": 0, "waits_on": 1, "is": 2, "for": 2, "about": 3, "links": 4}
     merged = {}
     for e in edges:
         if e["s"] not in ids or e["t"] not in ids: continue
@@ -51,9 +79,9 @@ def build(bundle, cfg, include_done=False):
     edges = []
     for m in merged.values():
         m["rels"].sort(key=lambda r: RANK.get(r, 9)); m["rel"] = m["rels"][0]; edges.append(m)
-    return {"nodes": out_nodes, "edges": edges, "legend": lg,
+    return {"nodes": out_nodes, "edges": edges, "legend": lg, "generated_at": __import__("datetime").datetime.now().isoformat(timespec="minutes"), "swept_at": swept_at,
             "counts": {"work": sum(n["type"] == "work" for n in out_nodes), "systems": sum(n["type"] == "system" for n in out_nodes),
-                       "people": sum(n["type"] == "person" for n in out_nodes), "edges": len(edges)}}
+                       "people": sum(n["type"] == "person" for n in out_nodes), "prs": sum(n["type"] == "pr" for n in out_nodes), "edges": len(edges)}}
 
 
 def gexf(g):
@@ -83,7 +111,7 @@ def graph(bundle, cfg, fmt="html", out=None, include_done=False, open_browser=Fa
     p = Path(out) if out else outdir / name
     p.write_text(text)
     c = g["counts"]
-    print(f"graph: {c['work']} work · {c['systems']} systems · {c['people']} people · {c['edges']} edges → {p}")
+    print(f"graph: {c['work']} work · {c['systems']} systems · {c['people']} people · {c['prs']} PRs · {c['edges']} edges → {p}")
     if fmt == "html": print(f"open: file://{p.resolve()}")
     if open_browser:
         import webbrowser; webbrowser.open(f"file://{p.resolve()}")
