@@ -18,6 +18,9 @@ def build(bundle, cfg, include_done=False):
     keys = {key_of(n) for n in allnodes}
     out_nodes, edges, seen = [], [], set()
     lg = dict(legend(cfg))
+    from datetime import date as _date
+    stage_of = {key_of(n): fm(n).get("stage") for n in allnodes}
+    today = _date.today()
     for n in allnodes:
         k = key_of(n); f = fm(n); t = f.get("type")
         if t not in ("work", "system", "person"): continue
@@ -30,7 +33,10 @@ def build(bundle, cfg, include_done=False):
                           "priority": f.get("priority"), "priority_label": lg.get(f.get("priority")), "env": f.get("env") or [],
                           "systems": f.get("systems") or [], "people": f.get("people") or [], "updated": str(f.get("updated") or "")[:10],
                           "gh_updated": str(f.get("gh_updated") or "")[:10], "state": f.get("state") or f.get("access") or "", "logs": logs,
-                          "resource": f.get("resource")})
+                          "resource": f.get("resource"), "blocked_by": f.get("blocked_by") or [],
+                          "unblocked": bool(f.get("blocked_by")) and all(stage_of.get(b) == "done" for b in f.get("blocked_by") or []),
+                          "gh_moved": bool(f.get("gh_updated")) and str(f.get("gh_updated"))[:10] > str(f.get("updated") or "")[:10],
+                          "age": (today - _date.fromisoformat(str(f.get("updated"))[:10])).days if f.get("updated") else None})
         def edge(a, b, rel):
             if b in keys and (a, b, rel) not in seen: seen.add((a, b, rel)); edges.append({"s": a, "t": b, "rel": rel})
         for s in f.get("systems") or []: edge(k, f"systems/{s}", "about")
