@@ -1,0 +1,82 @@
+"""graph.py — crn graph: export the bundle as a graph with its dimensions, and a single-file local viewer.
+
+Nodes: every work, system and person node with type, repo (from the resource URL), stage, priority, env, systems,
+people, updated, log lines, state. Edges: frontmatter lists (systems, people, blocked_by) plus markdown links in the body
+to other nodes. Formats: json, gexf (Gephi / Gephi Lite), html (self-contained viewer, opens from file://).
+Writes under <bundle>/.cairn/ by default. Nothing leaves the machine.
+"""
+import json, re, html, posixpath
+from pathlib import Path
+from .bundle import iwe, nodes, fm, key_of, die, legend, HERE
+from .github import ISSUE_URL
+
+LINK = re.compile(r"\]\(([^)\s]+?\.md)\)")
+
+
+def build(bundle, cfg, include_done=False):
+    allnodes = nodes(bundle)
+    keys = {key_of(n) for n in allnodes}
+    out_nodes, edges, seen = [], [], set()
+    lg = dict(legend(cfg))
+    for n in allnodes:
+        k = key_of(n); f = fm(n); t = f.get("type")
+        if t not in ("work", "system", "person"): continue
+        if t == "work" and f.get("stage") == "done" and not include_done: continue
+        body = iwe(bundle, "retrieve", "-k", k, check=False)
+        m = ISSUE_URL.search(str(f.get("resource", "")))
+        repo = f"{m.group(1)}/{m.group(2)}" if m else ("local" if t == "work" else None)
+        logs = sum(1 for ln in body.splitlines() if ln.startswith("- ") and "session" in ln)
+        out_nodes.append({"id": k, "type": t, "title": n.get("title") or k.split("/")[-1], "repo": repo, "stage": f.get("stage"),
+                          "priority": f.get("priority"), "priority_label": lg.get(f.get("priority")), "env": f.get("env") or [],
+                          "systems": f.get("systems") or [], "people": f.get("people") or [], "updated": str(f.get("updated") or "")[:10],
+                          "gh_updated": str(f.get("gh_updated") or "")[:10], "state": f.get("state") or f.get("access") or "", "logs": logs,
+                          "resource": f.get("resource")})
+        def edge(a, b, rel):
+            if b in keys and (a, b, rel) not in seen: seen.add((a, b, rel)); edges.append({"s": a, "t": b, "rel": rel})
+        for s in f.get("systems") or []: edge(k, f"systems/{s}", "about")
+        for p in f.get("people") or []: edge(k, f"people/{p}", "waits_on")
+        for b in f.get("blocked_by") or []: edge(k, b, "blocked_by")
+        for l in LINK.findall(body):
+            tgt = posixpath.normpath(l.lstrip("/")) if l.startswith("/") else posixpath.normpath(posixpath.join(posixpath.dirname(k), l))
+            if tgt.startswith(".."): continue            # a link outside the bundle (an artifact) is not a graph edge
+            tk = tgt[:-3] if tgt.endswith(".md") else tgt
+            if tk in keys and tk != k: edge(k, tk, "links")
+    ids = {n["id"] for n in out_nodes}
+    edges = [e for e in edges if e["s"] in ids and e["t"] in ids]
+    return {"nodes": out_nodes, "edges": edges, "legend": lg,
+            "counts": {"work": sum(n["type"] == "work" for n in out_nodes), "systems": sum(n["type"] == "system" for n in out_nodes),
+                       "people": sum(n["type"] == "person" for n in out_nodes), "edges": len(edges)}}
+
+
+def gexf(g):
+    def esc(s): return html.escape(str(s if s is not None else ""), quote=True)
+    L = ['<?xml version="1.0" encoding="UTF-8"?>', '<gexf xmlns="http://gexf.net/1.3" version="1.3"><graph defaultedgetype="directed">',
+         '<attributes class="node">'] + [f'<attribute id="{i}" title="{a}" type="string"/>' for i, a in enumerate(("type", "repo", "stage", "priority", "updated", "state"))] + ['</attributes><nodes>']
+    for n in g["nodes"]:
+        L.append(f'<node id="{esc(n["id"])}" label="{esc(n["title"])}"><attvalues>' + "".join(f'<attvalue for="{i}" value="{esc(n.get(a))}"/>' for i, a in enumerate(("type", "repo", "stage", "priority", "updated", "state"))) + "</attvalues></node>")
+    L.append("</nodes><edges>")
+    for i, e in enumerate(g["edges"]): L.append(f'<edge id="{i}" source="{esc(e["s"])}" target="{esc(e["t"])}" label="{esc(e["rel"])}"/>')
+    L.append("</edges></graph></gexf>")
+    return "\n".join(L)
+
+
+def render_html(g):
+    tpl = (HERE / "crn" / "viewer.html").read_text()
+    return tpl.replace("/*GRAPH_JSON*/null", json.dumps(g, ensure_ascii=False))
+
+
+def graph(bundle, cfg, fmt="html", out=None, include_done=False, open_browser=False):
+    g = build(bundle, cfg, include_done)
+    outdir = bundle / ".cairn"; outdir.mkdir(exist_ok=True)
+    if fmt == "json": text, name = json.dumps(g, indent=1, ensure_ascii=False), "graph.json"
+    elif fmt == "gexf": text, name = gexf(g), "graph.gexf"
+    elif fmt == "html": text, name = render_html(g), "graph.html"
+    else: die("format must be html, json or gexf")
+    p = Path(out) if out else outdir / name
+    p.write_text(text)
+    c = g["counts"]
+    print(f"graph: {c['work']} work · {c['systems']} systems · {c['people']} people · {c['edges']} edges → {p}")
+    if fmt == "html": print(f"open: file://{p.resolve()}")
+    if open_browser:
+        import webbrowser; webbrowser.open(f"file://{p.resolve()}")
+    return 0

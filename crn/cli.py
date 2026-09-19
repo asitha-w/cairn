@@ -10,6 +10,7 @@ EPILOG = """examples:
   crn log 419 "compact pass A done on node 1"
   crn priority                     the bundle's priority legend; crn priority 419 2 sets one
   crn sweep --create               refresh gh_* fields; create nodes for assigned issues that have none
+  crn graph --open                 the picture: group by repo or system, colour by priority, click a node
   crn doctor                       what is missing on this machine
 
 The bundle is $CAIRN_BUNDLE, else the nearest parent of the cwd with cairn.toml.
@@ -64,6 +65,12 @@ def build():
     s.add_argument("--create", action="store_true", help="create a stub work node for each assigned issue that has none")
     s.add_argument("--json", action="store_true")
 
+    s = add("graph", "Export the graph with its dimensions (type, repo, stage, priority, env, systems, people, activity) and write a self-contained local viewer. Nothing leaves the machine.")
+    s.add_argument("--format", choices=["html", "json", "gexf"], default="html", help="html: viewer (default) · json: nodes+edges · gexf: for Gephi / Gephi Lite")
+    s.add_argument("--out", metavar="FILE", help="write here instead of <bundle>/.cairn/graph.<ext>")
+    s.add_argument("--include-done", action="store_true", help="include work whose stage is done")
+    s.add_argument("--open", action="store_true", help="open the html in the default browser")
+
     s = add("trail", "Fold new Claude Code transcripts into ## Log: one line per session per node it touched. Idempotent; run by the session-end hook.")
     s.add_argument("--dry-run", action="store_true", help="print the lines instead of writing them")
     return p
@@ -91,6 +98,8 @@ def main(argv=None):
         if a.verb == "decide": return verbs.decide(bundle, a.node, " ".join(a.text))
         if a.verb == "sweep":
             from .github import sweep; return sweep(bundle, cfg, a.fixture, a.create, a.json)
+        if a.verb == "graph":
+            from .graph import graph; return graph(bundle, cfg, a.format, a.out, a.include_done, a.open)
         if a.verb == "trail":
             from .trail import trail; return trail(bundle, cfg, a.dry_run)
     except CrnError as e:

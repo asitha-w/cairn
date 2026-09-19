@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cairn graph</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0f1115; --fg:#e6e6e6; --muted:#8b93a7; --panel:#171a21; --line:#2a2f3a; --accent:#7aa2f7;
+          --p1:#f7768e; --p2:#ff9e64; --p3:#e0af68; --p4:#9ece6a; --none:#565f89; --sys:#7dcfff; --person:#bb9af7;
+          --active:#9ece6a; --blocked:#f7768e; --parked:#e0af68; --done:#565f89; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px/1.4 system-ui, sans-serif; }
+  #top { display:flex; gap:12px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap; }
+  #top label { color:var(--muted); display:flex; gap:4px; align-items:center; }
+  select, input[type=search] { background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
+  #wrap { display:flex; height:calc(100% - 46px); }
+  canvas { flex:1; display:block; cursor:grab; }
+  #side { width:340px; border-left:1px solid var(--line); background:var(--panel); padding:12px; overflow:auto; }
+  #side h2 { margin:0 0 4px; font-size:15px; }
+  #side .k { color:var(--muted); font-size:12px; }
+  #side .state { margin:8px 0; padding:8px; border-left:3px solid var(--accent); background:var(--bg); }
+  #side ul { padding-left:18px; margin:4px 0; }
+  #legend { display:flex; gap:10px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+  code { background:var(--bg); padding:1px 4px; border-radius:3px; }
+  .chk { display:flex; gap:8px; }
+  .chk label { gap:2px; }
+</style>
+</head>
+<body>
+<div id="top">
+  <strong>Cairn</strong>
+  <label>group by <select id="group"><option value="none">nothing</option><option value="repo">repo</option><option value="system">system</option><option value="stage">stage</option><option value="priority">priority</option></select></label>
+  <label>colour by <select id="colour"><option value="priority">priority</option><option value="stage">stage</option><option value="type">type</option><option value="repo">repo</option></select></label>
+  <label>size by <select id="size"><option value="logs">activity (log lines)</option><option value="links">links</option><option value="none">same</option></select></label>
+  <label class="chk">stage <span id="stages"></span></label>
+  <label><input type="checkbox" id="showsys" checked> systems</label>
+  <label><input type="checkbox" id="showpeople" checked> people</label>
+  <input type="search" id="q" placeholder="find… (title, state, key)" size="28">
+  <span id="legend"></span>
+  <span id="stats" style="color:var(--muted); margin-left:auto"></span>
+</div>
+<div id="wrap"><canvas id="c"></canvas><div id="side"><h2>Cairn graph</h2><div class="k">Click a node. Drag to move. Wheel to zoom. Double-click empty space to reset.</div></div></div>
+<script>
+const G = /*GRAPH_JSON*/null;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const PAL = ["#7aa2f7","#9ece6a","#e0af68","#f7768e","#bb9af7","#7dcfff","#ff9e64","#73daca","#c0caf5","#ff007c"];
+const cv = document.getElementById('c'), ctx = cv.getContext('2d'), side = document.getElementById('side');
+let W, H, tx = 0, ty = 0, scale = 1, drag = null, hover = null, selected = null, raf = null;
+const byId = Object.fromEntries(G.nodes.map(n => [n.id, n]));
+G.nodes.forEach(n => { n.x = (Math.random() - .5) * 600; n.y = (Math.random() - .5) * 600; n.vx = 0; n.vy = 0; n.links = 0; });
+G.edges.forEach(e => { byId[e.s].links++; byId[e.t].links++; });
+const stages = [...new Set(G.nodes.filter(n => n.stage).map(n => n.stage))];
+const stEl = document.getElementById('stages');
+stages.forEach(s => { const l = document.createElement('label'); l.innerHTML = `<input type="checkbox" data-stage="${s}" ${s === 'done' ? '' : 'checked'}> ${s}`; stEl.appendChild(l); });
+function visible(n) {
+  if (n.type === 'system' && !document.getElementById('showsys').checked) return false;
+  if (n.type === 'person' && !document.getElementById('showpeople').checked) return false;
+  if (n.type === 'work') { const c = stEl.querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  if (q && !(n.title + ' ' + n.state + ' ' + n.id).toLowerCase().includes(q)) return false;
+  return true;
+}
+function groupKey(n) {
+  const g = document.getElementById('group').value;
+  if (g === 'repo') return n.repo || (n.type === 'system' ? 'systems' : 'people');
+  if (g === 'system') return n.type === 'system' ? n.id : (n.systems[0] ? 'systems/' + n.systems[0] : 'none');
+  if (g === 'stage') return n.stage || n.type;
+  if (g === 'priority') return n.priority ? 'P' + n.priority : (n.type === 'work' ? 'unset' : n.type);
+  return null;
+}
+const colourCache = {};
+function colour(n) {
+  const c = document.getElementById('colour').value;
+  if (n.type === 'system') return css('--sys'); if (n.type === 'person') return css('--person');
+  if (c === 'priority') return n.priority ? css('--p' + Math.min(n.priority, 4)) : css('--none');
+  if (c === 'stage') return css('--' + (n.stage || 'none'));
+  if (c === 'type') return css('--accent');
+  const k = n.repo || 'local'; if (!(k in colourCache)) colourCache[k] = PAL[Object.keys(colourCache).length % PAL.length]; return colourCache[k];
+}
+function radius(n) {
+  const s = document.getElementById('size').value; const base = n.type === 'work' ? 6 : 5;
+  if (s === 'logs') return base + Math.min(n.logs, 20) * 0.6; if (s === 'links') return base + Math.min(n.links, 20) * 0.7; return base;
+}
+function legend() {
+  const c = document.getElementById('colour').value, el = document.getElementById('legend'); el.innerHTML = '';
+  const item = (col, txt) => el.insertAdjacentHTML('beforeend', `<span><i class="dot" style="background:${col}"></i>${txt}</span>`);
+  if (c === 'priority') { Object.entries(G.legend).forEach(([k, v]) => item(css('--p' + Math.min(k, 4)), 'P' + k + ' ' + v)); item(css('--none'), 'unset'); }
+  else if (c === 'stage') ['active', 'blocked', 'parked', 'done'].forEach(s => item(css('--' + s), s));
+  else if (c === 'repo') Object.entries(colourCache).forEach(([k, v]) => item(v, k));
+  item(css('--sys'), 'system'); item(css('--person'), 'person');
+}
+// ---- force simulation (no dependencies)
+const centers = {};
+function step() {
+  const vis = G.nodes.filter(visible); const gk = document.getElementById('group').value;
+  const groups = [...new Set(vis.map(groupKey))].filter(x => x !== null);
+  groups.forEach((g, i) => { const a = (i / groups.length) * Math.PI * 2, r = groups.length > 1 ? Math.min(W, H) * 0.30 : 0; centers[g] = { x: Math.cos(a) * r, y: Math.sin(a) * r }; });
+  for (const n of vis) {
+    const c = gk === 'none' ? { x: 0, y: 0 } : centers[groupKey(n)]; const k = gk === 'none' ? 0.005 : 0.03;
+    n.vx += (c.x - n.x) * k; n.vy += (c.y - n.y) * k;
+  }
+  for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
+    const a = vis[i], b = vis[j]; let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
+    const min = radius(a) + radius(b) + 6; const f = d < min ? (min - d) * 0.15 : 900 / d2;
+    dx /= d; dy /= d; a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
+  }
+  for (const e of G.edges) {
+    const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01, want = 70, f = (d - want) * 0.02;
+    a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
+  }
+  for (const n of vis) { if (n === drag) continue; n.vx *= 0.82; n.vy *= 0.82; n.x += n.vx; n.y += n.vy; }
+}
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); ctx.translate(W / 2 + tx, H / 2 + ty); ctx.scale(scale, scale);
+  const vis = G.nodes.filter(visible), gk = document.getElementById('group').value;
+  if (gk !== 'none') { ctx.font = '12px system-ui'; ctx.fillStyle = css('--muted'); for (const [g, c] of Object.entries(centers)) if (vis.some(n => groupKey(n) === g)) ctx.fillText(g, c.x - 30, c.y - Math.min(W, H) * 0.1); }
+  ctx.lineWidth = 1 / scale;
+  for (const e of G.edges) { const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
+    const hot = selected && (a === selected || b === selected);
+    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : 'rgba(139,147,167,0.35)'; ctx.lineWidth = (hot ? 2 : 1) / scale;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+  for (const n of vis) { const r = radius(n); ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fillStyle = colour(n); ctx.fill();
+    if (n === selected || n === hover) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.stroke(); }
+    if (scale > 0.8 || n === selected || n === hover || n.type !== 'work') { ctx.fillStyle = css('--fg'); ctx.font = `${11 / scale}px system-ui`; ctx.fillText(n.title.length > 38 ? n.title.slice(0, 37) + '…' : n.title, n.x + r + 3, n.y + 4 / scale); } }
+  document.getElementById('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'person').length} people`;
+}
+function loop() { step(); draw(); raf = requestAnimationFrame(loop); }
+function resize() { W = cv.width = cv.clientWidth; H = cv.height = cv.clientHeight; }
+function pick(mx, my) { const x = (mx - W / 2 - tx) / scale, y = (my - H / 2 - ty) / scale; let best = null, bd = 1e9;
+  for (const n of G.nodes.filter(visible)) { const d = Math.hypot(n.x - x, n.y - y); if (d < radius(n) + 4 && d < bd) { best = n; bd = d; } } return best; }
+function show(n) {
+  selected = n; if (!n) return;
+  const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const linked = G.edges.filter(e => e.s === n.id || e.t === n.id).map(e => { const o = e.s === n.id ? e.t : e.s; return `<li>${esc(e.rel)} → <a href="#" data-id="${esc(o)}">${esc(byId[o].title)}</a></li>`; }).join('');
+  side.innerHTML = `<h2>${esc(n.title)}</h2><div class="k"><code>${esc(n.id)}</code>${n.repo ? ' · ' + esc(n.repo) : ''}</div>` +
+    (n.type === 'work' ? `<div class="k">${esc(n.stage)}${n.priority ? ' · P' + n.priority + ' ' + esc(n.priority_label || '') : ''} · updated ${esc(n.updated)}${n.gh_updated ? ' · gh ' + esc(n.gh_updated) : ''} · ${n.logs} sessions</div>` : '') +
+    `<div class="state">${esc(n.state)}</div>` + (n.env.length ? `<div class="k">env ${esc(n.env.join(', '))}</div>` : '') +
+    (n.resource ? `<div class="k"><a href="${esc(n.resource)}" target="_blank" style="color:var(--accent)">${esc(n.resource)}</a></div>` : '') +
+    `<div class="k" style="margin-top:8px">links (${linked ? G.edges.filter(e => e.s === n.id || e.t === n.id).length : 0})</div><ul>${linked}</ul>` +
+    `<div class="k" style="margin-top:8px">terminal: <code>crn open ${esc(n.id.split('/')[1])}</code></div>`;
+  side.querySelectorAll('a[data-id]').forEach(a => a.onclick = ev => { ev.preventDefault(); show(byId[a.dataset.id]); });
+}
+cv.addEventListener('mousedown', e => { const n = pick(e.offsetX, e.offsetY); if (n) { drag = n; } else { drag = { pan: true, x: e.offsetX, y: e.offsetY }; } });
+cv.addEventListener('mousemove', e => { if (drag && drag.pan) { tx += e.offsetX - drag.x; ty += e.offsetY - drag.y; drag.x = e.offsetX; drag.y = e.offsetY; }
+  else if (drag) { drag.x = (e.offsetX - W / 2 - tx) / scale; drag.y = (e.offsetY - H / 2 - ty) / scale; drag.vx = drag.vy = 0; } else hover = pick(e.offsetX, e.offsetY); });
+cv.addEventListener('mouseup', e => { if (drag && !drag.pan) show(drag); drag = null; });
+cv.addEventListener('click', e => { const n = pick(e.offsetX, e.offsetY); if (n) show(n); });
+cv.addEventListener('dblclick', e => { if (!pick(e.offsetX, e.offsetY)) { tx = ty = 0; scale = 1; } });
+cv.addEventListener('wheel', e => { e.preventDefault(); scale = Math.max(0.2, Math.min(4, scale * (e.deltaY < 0 ? 1.1 : 0.9))); }, { passive: false });
+document.querySelectorAll('#top select, #top input').forEach(el => el.addEventListener('input', () => { colourCache && Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); }));
+window.addEventListener('resize', resize); resize(); legend(); loop();
+</script>
+</body>
+</html>

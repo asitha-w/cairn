@@ -1,6 +1,6 @@
 ---
 name: cairn
-description: "crn — the user's work graph in plain markdown (Cairn). Use when the user names a piece of work or a system to pick up ('let's work on X', 'state of Y'), asks what is pending, wants a milestone recorded, or asks for a GitHub sweep. Everything is a CLI call, deterministic, no model: crn find, crn open, crn pending, crn priority, crn state, crn stage, crn log, crn decide, crn sweep, crn trail; crn <verb> --help explains one; crn doctor when something is missing. Never read the bundle's files directly when a crn verb answers the question."
+description: "crn — the user's work graph in plain markdown (Cairn). Use when the user names a piece of work or a system to pick up ('let's work on X', 'state of Y'), asks what is pending, wants a milestone recorded, or asks for a GitHub sweep. Everything is a CLI call, deterministic, no model: crn find, crn open, crn pending, crn priority, crn state, crn stage, crn log, crn decide, crn sweep, crn trail, crn graph; crn <verb> --help explains one; crn doctor when something is missing. Never read the bundle's files directly when a crn verb answers the question."
 ---
 
 # Cairn
@@ -18,6 +18,7 @@ finds the bundle from `$CAIRN_BUNDLE`. Every verb prints one screen; print it as
 | a milestone lands | `crn log <key> "what landed"`; a decision: `crn decide <key> "…"`; a new truth: `crn state <key> "one sentence"` | say that you recorded it |
 | "what should I pick up" | `crn pending` | the list, as printed, already ordered by priority then stage. Do not summarise or re-rank. |
 | "set the priority" / "this is urgent" | `crn priority <node>` first: it prints the bundle's legend and the current level. Ask which level in one line, then `crn priority <node> <n>`. | never guess a level from the user's adjective; the legend is theirs |
+| "show me the graph" / "the picture" | `crn graph --open` | it opens in the browser; say what the controls do in one line (group by repo or system, colour by priority). Never describe the graph from memory. |
 | "do a sweep" / "what is waiting on me" | `crn sweep` (`--create` to add nodes for new issues) | print it: changed nodes, issues without a node, PRs requesting review, your open PRs. The user decides what becomes a node. |
 
 ## Install on a new machine (when `crn` or the bundle is missing)

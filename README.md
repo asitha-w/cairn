@@ -74,6 +74,7 @@ read verb takes `--json`:
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
 | `crn validate` | `iwe schema validate`; exit 1 on any violation | no |
 | `crn systems` | system nodes with how many work nodes point at them | no |
+| `crn graph [--open]` | a self-contained local viewer: group into sub-graphs by repo or system, colour by priority or stage, size by activity, click a node for its state and links; `--format json` or `gexf` for other tools | `.cairn/graph.*` only |
 | `crn init <dir>` / `crn doctor` | scaffold a bundle and print the wiring steps / check python, iwe, gh, env, config, schemas, hook, skill | a new bundle / no |
 
 Two writers never touch the same field. You (or your agent, on your say-so) own `state`, `stage`,
@@ -143,6 +144,7 @@ crn/verbs.py     find, open, pending, systems, validate, state, stage, log, deci
 crn/github.py    sweep: the only code that talks to GitHub (read-only, via your gh login) or a fixture
 crn/trail.py     transcripts → Log
 crn/setup.py     init and doctor
+crn/graph.py     graph export: json, gexf, and the html viewer (crn/viewer.html, no dependencies)
 bin/crn          two-line shim onto the package
 schemas/         work, system, person (iwe document schemas)
 examples/        the mock bundle, a GitHub fixture, a cairn.toml template
@@ -171,14 +173,15 @@ issues, and you write one system node per thing you operate.
 
 - Not a task tracker. GitHub (or whatever you use) stays the system of record; a node points at it.
 - Not agent memory in the chat sense. It holds work, systems and people, not conversation.
-- Not a database. If you want a picture or multi-hop queries, build an index from the bundle with an
-  embedded graph database such as [LadybugDB](https://ladybugdb.com/) and throw it away when done.
-  The markdown stays the truth.
+- Not a database. `crn graph` gives you the picture from the files; for multi-hop queries build an index
+  from `crn graph --format json` with an embedded graph database such as [LadybugDB](https://ladybugdb.com/)
+  and throw it away when done. The markdown stays the truth.
 
 ## Status
 
-v0.2: the CLI as a package with per-verb help, `--json`, `init` and `doctor`; the three schemas; the
-example bundle; the skill and command; the self-test. Not yet: a viewer, `docker compose`, a scheduled
-sweep, converters from other note formats.
+v0.3: the CLI as a package with per-verb help and `--json`; `init`, `doctor`, `priority`, `graph` with a
+local viewer; the three schemas; the example bundle; the skill and command; the self-test. Not yet:
+`docker compose`, a scheduled sweep, a `record` node type for investigations and research, converters
+from other note formats.
 
 MIT.
