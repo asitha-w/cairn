@@ -13,7 +13,8 @@
   #top label { color:var(--muted); display:flex; gap:4px; align-items:center; }
   select, input[type=search] { background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:3px 6px; }
   #wrap { display:flex; height:calc(100% - 46px); }
-  canvas { flex:1; display:block; cursor:grab; }
+  #cw { flex:1; min-width:0; position:relative; }
+  canvas { position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab; }
   #side { width:340px; border-left:1px solid var(--line); background:var(--panel); padding:12px; overflow:auto; }
   #side h2 { margin:0 0 4px; font-size:15px; }
   #side .k { color:var(--muted); font-size:12px; }
@@ -22,8 +23,9 @@
   #legend { display:flex; gap:10px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
   .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; }
   code { background:var(--bg); padding:1px 4px; border-radius:3px; }
-  .chk { display:flex; gap:8px; }
-  .chk label { gap:2px; }
+  .chk { display:inline-flex; gap:8px; white-space:nowrap; }
+  .chk span { display:inline-flex; gap:8px; }
+  .chk label { gap:2px; display:inline-flex; align-items:center; }
 </style>
 </head>
 <body>
@@ -39,7 +41,7 @@
   <span id="legend"></span>
   <span id="stats" style="color:var(--muted); margin-left:auto"></span>
 </div>
-<div id="wrap"><canvas id="c"></canvas><div id="side"><h2>Cairn graph</h2><div class="k">Click a node. Drag to move. Wheel to zoom. Double-click empty space to reset.</div></div></div>
+<div id="wrap"><div id="cw"><canvas id="c"></canvas></div><div id="side"><h2>Cairn graph</h2><div class="k">Click a node. Drag to move. Wheel to zoom. Double-click empty space to reset.</div></div></div>
 <script>
 const G = /*GRAPH_JSON*/null;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -93,20 +95,24 @@ function legend() {
 const centers = {};
 function step() {
   const vis = G.nodes.filter(visible); const gk = document.getElementById('group').value;
-  const groups = [...new Set(vis.map(groupKey))].filter(x => x !== null);
-  groups.forEach((g, i) => { const a = (i / groups.length) * Math.PI * 2, r = groups.length > 1 ? Math.min(W, H) * 0.30 : 0; centers[g] = { x: Math.cos(a) * r, y: Math.sin(a) * r }; });
+  const hub = g => g === 'systems' || g === 'people' || g === 'system' || g === 'person';
+  const groups = [...new Set(vis.map(groupKey))].filter(x => x !== null && !hub(x));
+  const sizes = Object.fromEntries(groups.map(g => [g, vis.filter(n => groupKey(n) === g).length]));
+  const R = 140 + 26 * Math.sqrt(vis.length);
+  groups.forEach((g, i) => { const a = (i / groups.length) * Math.PI * 2 - Math.PI / 2; centers[g] = { x: Math.cos(a) * R, y: Math.sin(a) * R, n: sizes[g] }; });
   for (const n of vis) {
-    const c = gk === 'none' ? { x: 0, y: 0 } : centers[groupKey(n)]; const k = gk === 'none' ? 0.005 : 0.03;
+    const g = groupKey(n); const c = gk === 'none' || hub(g) ? { x: 0, y: 0 } : centers[g];
+    const k = gk === 'none' ? 0.002 : hub(g) ? 0.006 : 0.05;
     n.vx += (c.x - n.x) * k; n.vy += (c.y - n.y) * k;
   }
   for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
     const a = vis[i], b = vis[j]; let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
-    const min = radius(a) + radius(b) + 6; const f = d < min ? (min - d) * 0.15 : 900 / d2;
+    const min = radius(a) + radius(b) + 14; const f = d < min ? (min - d) * 0.2 : 2600 / d2;
     dx /= d; dy /= d; a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
   }
   for (const e of G.edges) {
     const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
-    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01, want = 70, f = (d - want) * 0.02;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01, want = 120, f = (d - want) * 0.015;
     a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
   }
   for (const n of vis) { if (n === drag) continue; n.vx *= 0.82; n.vy *= 0.82; n.x += n.vx; n.y += n.vy; }
@@ -114,41 +120,56 @@ function step() {
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); ctx.translate(W / 2 + tx, H / 2 + ty); ctx.scale(scale, scale);
   const vis = G.nodes.filter(visible), gk = document.getElementById('group').value;
-  if (gk !== 'none') { ctx.font = '12px system-ui'; ctx.fillStyle = css('--muted'); for (const [g, c] of Object.entries(centers)) if (vis.some(n => groupKey(n) === g)) ctx.fillText(g, c.x - 30, c.y - Math.min(W, H) * 0.1); }
+  if (gk !== 'none') for (const [g, c] of Object.entries(centers)) {
+    const mem = vis.filter(n => groupKey(n) === g); if (!mem.length) continue;
+    const cx = mem.reduce((s, n) => s + n.x, 0) / mem.length, cy = mem.reduce((s, n) => s + n.y, 0) / mem.length;
+    const rr = Math.max(40, ...mem.map(n => Math.hypot(n.x - cx, n.y - cy) + radius(n) + 18));
+    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fillStyle = 'rgba(122,162,247,0.05)'; ctx.fill(); ctx.strokeStyle = 'rgba(122,162,247,0.25)'; ctx.lineWidth = 1 / scale; ctx.stroke();
+    ctx.font = `${13 / scale}px system-ui`; ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.fillText(`${g} · ${mem.length}`, cx, cy - rr - 8 / scale); ctx.textAlign = 'left';
+  }
   ctx.lineWidth = 1 / scale;
   for (const e of G.edges) { const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
     const hot = selected && (a === selected || b === selected);
-    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : 'rgba(139,147,167,0.35)'; ctx.lineWidth = (hot ? 2 : 1) / scale;
+    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : e.rel === 'waits_on' ? css('--person') : 'rgba(139,147,167,0.3)'; ctx.lineWidth = (hot ? 2 : 1) / scale;
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
   for (const n of vis) { const r = radius(n); ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fillStyle = colour(n); ctx.fill();
     if (n === selected || n === hover) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.stroke(); }
-    if (scale > 0.8 || n === selected || n === hover || n.type !== 'work') { ctx.fillStyle = css('--fg'); ctx.font = `${11 / scale}px system-ui`; ctx.fillText(n.title.length > 38 ? n.title.slice(0, 37) + '…' : n.title, n.x + r + 3, n.y + 4 / scale); } }
+    const q = document.getElementById('q').value.trim();
+    if (n.type !== 'work' || scale > 1.7 || n === selected || n === hover || q) { ctx.fillStyle = n.type === 'work' ? css('--fg') : css('--muted'); ctx.font = `${(n.type === 'work' ? 11 : 10) / scale}px system-ui`; ctx.fillText(n.title.length > 34 ? n.title.slice(0, 33) + '…' : n.title, n.x + r + 3, n.y + 4 / scale); } }
   document.getElementById('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'person').length} people`;
 }
-function loop() { step(); draw(); raf = requestAnimationFrame(loop); }
-function resize() { W = cv.width = cv.clientWidth; H = cv.height = cv.clientHeight; }
+let touched = false, ticks = 0;
+function fit() { const vis = G.nodes.filter(visible); if (!vis.length) return;
+  const xs = vis.map(n => n.x), ys = vis.map(n => n.y), minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+  const pad = document.getElementById('group').value === 'none' ? 90 : 190;   // room for hulls and their labels
+  const sw = (W - pad) / Math.max(maxx - minx, 1), sh = (H - pad) / Math.max(maxy - miny, 1); scale = Math.max(0.2, Math.min(2.5, Math.min(sw, sh)));
+  tx = -((minx + maxx) / 2) * scale; ty = -((miny + maxy) / 2) * scale; }
+function loop() { step(); if (!touched && ++ticks % 20 === 0 && ticks < 400) fit(); draw(); raf = requestAnimationFrame(loop); }
+const cw = document.getElementById('cw');
+function resize() { W = cv.width = cw.clientWidth; H = cv.height = cw.clientHeight; }
 function pick(mx, my) { const x = (mx - W / 2 - tx) / scale, y = (my - H / 2 - ty) / scale; let best = null, bd = 1e9;
   for (const n of G.nodes.filter(visible)) { const d = Math.hypot(n.x - x, n.y - y); if (d < radius(n) + 4 && d < bd) { best = n; bd = d; } } return best; }
 function show(n) {
   selected = n; if (!n) return;
   const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-  const linked = G.edges.filter(e => e.s === n.id || e.t === n.id).map(e => { const o = e.s === n.id ? e.t : e.s; return `<li>${esc(e.rel)} → <a href="#" data-id="${esc(o)}">${esc(byId[o].title)}</a></li>`; }).join('');
+  const rel = {}; G.edges.filter(e => e.s === n.id || e.t === n.id).forEach(e => { const o = e.s === n.id ? e.t : e.s; (rel[o] = rel[o] || new Set()); (e.rels || [e.rel]).forEach(r => rel[o].add(e.s === n.id ? r : r + ' (in)')); });
+  const linked = Object.entries(rel).map(([o, rs]) => `<li><a href="#" data-id="${esc(o)}">${esc(byId[o].title)}</a> <span class="k">${esc([...rs].join(', '))}</span></li>`).join('');
   side.innerHTML = `<h2>${esc(n.title)}</h2><div class="k"><code>${esc(n.id)}</code>${n.repo ? ' · ' + esc(n.repo) : ''}</div>` +
     (n.type === 'work' ? `<div class="k">${esc(n.stage)}${n.priority ? ' · P' + n.priority + ' ' + esc(n.priority_label || '') : ''} · updated ${esc(n.updated)}${n.gh_updated ? ' · gh ' + esc(n.gh_updated) : ''} · ${n.logs} sessions</div>` : '') +
     `<div class="state">${esc(n.state)}</div>` + (n.env.length ? `<div class="k">env ${esc(n.env.join(', '))}</div>` : '') +
     (n.resource ? `<div class="k"><a href="${esc(n.resource)}" target="_blank" style="color:var(--accent)">${esc(n.resource)}</a></div>` : '') +
-    `<div class="k" style="margin-top:8px">links (${linked ? G.edges.filter(e => e.s === n.id || e.t === n.id).length : 0})</div><ul>${linked}</ul>` +
+    `<div class="k" style="margin-top:8px">linked nodes (${Object.keys(rel).length})</div><ul>${linked}</ul>` +
     `<div class="k" style="margin-top:8px">terminal: <code>crn open ${esc(n.id.split('/')[1])}</code></div>`;
   side.querySelectorAll('a[data-id]').forEach(a => a.onclick = ev => { ev.preventDefault(); show(byId[a.dataset.id]); });
 }
-cv.addEventListener('mousedown', e => { const n = pick(e.offsetX, e.offsetY); if (n) { drag = n; } else { drag = { pan: true, x: e.offsetX, y: e.offsetY }; } });
+cv.addEventListener('mousedown', e => { touched = true; const n = pick(e.offsetX, e.offsetY); if (n) { drag = n; } else { drag = { pan: true, x: e.offsetX, y: e.offsetY }; } });
 cv.addEventListener('mousemove', e => { if (drag && drag.pan) { tx += e.offsetX - drag.x; ty += e.offsetY - drag.y; drag.x = e.offsetX; drag.y = e.offsetY; }
   else if (drag) { drag.x = (e.offsetX - W / 2 - tx) / scale; drag.y = (e.offsetY - H / 2 - ty) / scale; drag.vx = drag.vy = 0; } else hover = pick(e.offsetX, e.offsetY); });
 cv.addEventListener('mouseup', e => { if (drag && !drag.pan) show(drag); drag = null; });
 cv.addEventListener('click', e => { const n = pick(e.offsetX, e.offsetY); if (n) show(n); });
-cv.addEventListener('dblclick', e => { if (!pick(e.offsetX, e.offsetY)) { tx = ty = 0; scale = 1; } });
-cv.addEventListener('wheel', e => { e.preventDefault(); scale = Math.max(0.2, Math.min(4, scale * (e.deltaY < 0 ? 1.1 : 0.9))); }, { passive: false });
-document.querySelectorAll('#top select, #top input').forEach(el => el.addEventListener('input', () => { colourCache && Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); }));
+cv.addEventListener('dblclick', e => { if (!pick(e.offsetX, e.offsetY)) { touched = false; ticks = 0; } });
+cv.addEventListener('wheel', e => { e.preventDefault(); touched = true; scale = Math.max(0.2, Math.min(4, scale * (e.deltaY < 0 ? 1.1 : 0.9))); }, { passive: false });
+document.querySelectorAll('#top select, #top input').forEach(el => el.addEventListener('input', () => { Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); touched = false; ticks = 0; }));
 window.addEventListener('resize', resize); resize(); legend(); loop();
 </script>
 </body>

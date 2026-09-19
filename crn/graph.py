@@ -42,7 +42,15 @@ def build(bundle, cfg, include_done=False):
             tk = tgt[:-3] if tgt.endswith(".md") else tgt
             if tk in keys and tk != k: edge(k, tk, "links")
     ids = {n["id"] for n in out_nodes}
-    edges = [e for e in edges if e["s"] in ids and e["t"] in ids]
+    RANK = {"blocked_by": 0, "waits_on": 1, "about": 2, "links": 3}
+    merged = {}
+    for e in edges:
+        if e["s"] not in ids or e["t"] not in ids: continue
+        m = merged.setdefault((e["s"], e["t"]), {"s": e["s"], "t": e["t"], "rels": []})
+        if e["rel"] not in m["rels"]: m["rels"].append(e["rel"])
+    edges = []
+    for m in merged.values():
+        m["rels"].sort(key=lambda r: RANK.get(r, 9)); m["rel"] = m["rels"][0]; edges.append(m)
     return {"nodes": out_nodes, "edges": edges, "legend": lg,
             "counts": {"work": sum(n["type"] == "work" for n in out_nodes), "systems": sum(n["type"] == "system" for n in out_nodes),
                        "people": sum(n["type"] == "person" for n in out_nodes), "edges": len(edges)}}
