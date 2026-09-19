@@ -7,7 +7,7 @@ both humans and agents. It exists because **a coding-agent session dies and the 
 you kill a long Claude Code session, open a new one the next morning, and pay the onboarding tax
 again: which issue was this, what did we decide, what did we actually run, who are we waiting on.
 
-<p align="center"><img src="docs/cairn.png" alt="Cairn: your work from GitHub, Claude Code, your CLI and notes flows through crn and iwe into plain Markdown files, read back by humans and coding agents" width="900"></p>
+<p align="center"><img src="docs/cairn0.png" alt="Cairn: your work from GitHub, Claude Code, your CLI and notes flows through crn and iwe into plain Markdown files, read back by humans and coding agents" width="900"></p>
 
 Cairn keeps the answer in a folder you own:
 
