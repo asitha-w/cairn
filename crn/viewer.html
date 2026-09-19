@@ -156,7 +156,7 @@ function step() {
   }
   for (const e of G.edges) {
     const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
-    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01, want = 120, f = (d - want) * 0.015;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01, want = (selected && $('focus').checked) ? 170 : 120, f = (d - want) * 0.015;
     a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
   }
   for (const n of vis) { if (n === drag) continue; n.vx *= 0.82; n.vy *= 0.82; n.x += n.vx; n.y += n.vy; }
@@ -178,8 +178,23 @@ function draw() {
   const q = $('q').value.trim(), focused = selected && $('focus').checked;
   for (const n of vis) { const r = radius(n); ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fillStyle = colour(n); ctx.fill();
     if (n.type === 'pr') { ctx.strokeStyle = colour(n); ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.rect(n.x - r, n.y - r, 2 * r, 2 * r); ctx.stroke(); }
-    if (n === selected || n === hover) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.stroke(); }
-    if (n.type === 'system' || n.type === 'person' || scale > 1.7 || n === selected || n === hover || q || focused) { ctx.fillStyle = n.type === 'work' || n.type === 'pr' ? css('--fg') : css('--muted'); ctx.font = `${(n.type === 'work' ? 11 : 10) / scale}px system-ui`; ctx.fillText(n.title.length > 34 ? n.title.slice(0, 33) + '…' : n.title, n.x + r + 3, n.y + 4 / scale); } }
+    if (n === selected) { ctx.beginPath(); ctx.arc(n.x, n.y, r + 6 / scale, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 3 / scale; ctx.stroke(); }
+    if (n === selected || n === hover) { ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.stroke(); }
+    const isNb = focused && n !== selected;
+    if (n.type === 'system' || n.type === 'person' || scale > 1.7 || n === selected || n === hover || q || focused) {
+      const bold = n === selected || isNb;
+      ctx.fillStyle = n.type === 'work' || n.type === 'pr' || bold ? css('--fg') : css('--muted');
+      ctx.font = `${bold ? 'bold ' : ''}${((n.type === 'work' ? 11 : 10) + (n === selected ? 2 : 0)) / scale}px system-ui`;
+      const maxLen = bold ? 48 : 34;
+      ctx.fillText(n.title.length > maxLen ? n.title.slice(0, maxLen - 1) + '…' : n.title, n.x + r + 3, n.y + 4 / scale);
+      if (isNb) {   // one line of context under a neighbour: how it relates, and what it says about itself
+        const rel = relations(selected)[n.id]; const relTxt = rel ? [...rel].join(', ') : '';
+        const ctxTxt = n.type === 'work' ? (n.state || '') : n.type === 'system' ? (n.state || '') : n.type === 'pr' ? (n.role === 'review' ? 'requests your review' : 'your open PR') + ' · ' + n.updated : '';
+        const line2 = [relTxt, n.type === 'work' && n.stage ? n.stage + (n.priority ? ' P' + n.priority : '') : '', ctxTxt].filter(Boolean).join(' · ');
+        ctx.fillStyle = css('--muted'); ctx.font = `${9.5 / scale}px system-ui`;
+        ctx.fillText(line2.length > 90 ? line2.slice(0, 89) + '…' : line2, n.x + r + 3, n.y + 16 / scale);
+      }
+    } }
   $('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'pr').length} PRs`;
 }
 function fit() { const vis = G.nodes.filter(visible); if (!vis.length) return;
