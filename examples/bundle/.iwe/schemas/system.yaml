@@ -1,0 +1,27 @@
+$schema: https://document-schema.org/draft/2026-06/schema
+description: Cairn system node — a thing you operate. Its body is the card an agent reads before touching it.
+frontmatter:
+  type: object
+  required: [type, title, access]
+  properties:
+    type: { const: system }
+    title: { type: string, minLength: 2 }
+    access: { type: string, minLength: 5, description: "how to reach it from this workstation, one line" }
+    look_in: { type: string, description: "where its config and code live, one line" }
+    env: { type: array, items: { type: string } }
+    aliases: { type: array, items: { type: string }, description: "other words people use for it; search hits these" }
+    tags: { type: array, items: { type: string } }
+maxTokens: 900
+sections:
+  - header: { minLength: 2 }
+    maxContains: 1
+    sections:
+      - header: { const: Gotchas }
+        minContains: 0
+        maxContains: 1
+        description: "- one line each; the things that cost you an hour once"
+      - header: { const: Runbooks }
+        minContains: 0
+        maxContains: 1
+    additionalSections: false
+additionalSections: false

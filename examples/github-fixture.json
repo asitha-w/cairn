@@ -1,0 +1,10 @@
+{
+  "note": "Shape of what crn sweep reads. One item per open issue assigned to you. Used with: crn sweep --fixture examples/github-fixture.json",
+  "items": [
+    {"owner": "acme", "repo": "platform", "number": 431, "title": "Peer the dev database cluster to the ops network", "state": "open", "updated": "2026-09-18T07:25:00Z", "last_actor": "sam", "url": "https://github.com/acme/platform/issues/431"},
+    {"owner": "acme", "repo": "platform", "number": 419, "title": "Compact the telemetry collection to reclaim freed space", "state": "open", "updated": "2026-09-17T15:00:00Z", "last_actor": "me", "url": "https://github.com/acme/platform/issues/419"},
+    {"owner": "acme", "repo": "platform", "number": 362, "title": "Reserved instances expire 2026-10-02 with auto-renew off", "state": "open", "updated": "2026-09-16T09:00:00Z", "last_actor": "alex", "url": "https://github.com/acme/platform/issues/362"},
+    {"owner": "acme", "repo": "manifests", "number": 894, "title": "Remove the retired event exporter", "state": "open", "updated": "2026-09-12T10:00:00Z", "last_actor": "sam", "url": "https://github.com/acme/manifests/issues/894"},
+    {"owner": "acme", "repo": "platform", "number": 512, "title": "Alert on backup freshness for the object store", "state": "open", "updated": "2026-09-19T06:00:00Z", "last_actor": "alex", "url": "https://github.com/acme/platform/issues/512"}
+  ]
+}

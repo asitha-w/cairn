@@ -1,0 +1,13 @@
+$schema: https://document-schema.org/draft/2026-06/schema
+description: Cairn person node — someone work waits on or is shared with. Handles only, never contact details.
+frontmatter:
+  type: object
+  required: [type, title]
+  properties:
+    type: { const: person }
+    title: { type: string, minLength: 2 }
+    handle: { type: string, description: "GitHub or chat handle" }
+    role: { type: string }
+    tags: { type: array, items: { type: string } }
+maxTokens: 300
+additionalSections: true
