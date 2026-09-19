@@ -58,8 +58,9 @@ folder into a queryable graph: full-text and fuzzy search, retrieval with linked
 validation, and guarded atomic edits. Your editor gets an LSP for the same files. Cairn does not
 reimplement any of that.
 
-**`crn` does the work verbs.** A single Python file, standard library only, that calls `iwe` and adds
-what a work graph needs:
+**`crn` does the work verbs.** A small Python package, standard library only (3.11+), that calls `iwe`
+and adds what a work graph needs. `crn --help` lists the verbs, `crn <verb> --help` explains one, every
+read verb takes `--json`:
 
 | Verb | What it does | Writes |
 |---|---|---|
@@ -70,8 +71,9 @@ what a work graph needs:
 | `crn log <node> "…"` / `crn decide <node> "…"` | append a dated line under Log or Decisions | the node |
 | `crn sweep [--create]` | refresh `gh_*` fields from GitHub; list assigned issues with no node, PRs requesting your review, and your open PRs | the node's `gh_*` fields only |
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
-| `crn validate` | `iwe schema validate` | no |
+| `crn validate` | `iwe schema validate`; exit 1 on any violation | no |
 | `crn systems` | system nodes with how many work nodes point at them | no |
+| `crn init <dir>` / `crn doctor` | scaffold a bundle and print the wiring steps / check python, iwe, gh, env, config, schemas, hook, skill | a new bundle / no |
 
 Two writers never touch the same field. You (or your agent, on your say-so) own `state`, `stage`,
 `Now`, `Next`, `Decisions`. The producers own `gh_state`, `gh_updated`, `last_actor` and `Log`. The
@@ -129,6 +131,22 @@ The rule the whole design rests on: **anything that changes an environment or co
 agent under the user's permissions; anything mechanical and read-only belongs in a tool.** `crn`
 never comments on GitHub, never touches a cluster, never writes outside the bundle.
 
+## Layout
+
+```
+crn/cli.py       argparse front: one subcommand per verb, per-verb --help, --version
+crn/bundle.py    find the bundle, read cairn.toml, the iwe wrapper, resolve a node from what you typed
+crn/verbs.py     find, open, pending, systems, validate, state, stage, log, decide
+crn/github.py    sweep: the only code that talks to GitHub (read-only, via your gh login) or a fixture
+crn/trail.py     transcripts → Log
+crn/setup.py     init and doctor
+bin/crn          two-line shim onto the package
+schemas/         work, system, person (iwe document schemas)
+examples/        the mock bundle, a GitHub fixture, a cairn.toml template
+skills/, commands/   the Claude Code skill and the /node command
+tests/selftest.sh    PASS/FAIL, no network
+```
+
 ## Install and try
 
 ```bash
@@ -142,8 +160,9 @@ crn sweep --fixture cairn/examples/github-fixture.json --create
 bash cairn/tests/selftest.sh                         # PASS/FAIL, no network
 ```
 
-Your own bundle: `crn init ~/my-graph`, edit `cairn.toml`, write your first system node, run
-`crn sweep --create` to seed work nodes from your open GitHub issues, then give each a `state`.
+Your own bundle: `crn init ~/my-graph` prints the four steps and the Claude Code wiring; `crn doctor`
+tells you what is still missing. Then `crn sweep --create` seeds work nodes from your open GitHub
+issues, and you write one system node per thing you operate.
 
 ## What Cairn is not
 
@@ -155,7 +174,8 @@ Your own bundle: `crn init ~/my-graph`, edit `cairn.toml`, write your first syst
 
 ## Status
 
-v0.1: the CLI, the three schemas, the example bundle, the skill and command, the self-test. Not yet:
-a viewer, `docker compose`, a scheduled sweep, converters from other note formats.
+v0.2: the CLI as a package with per-verb help, `--json`, `init` and `doctor`; the three schemas; the
+example bundle; the skill and command; the self-test. Not yet: a viewer, `docker compose`, a scheduled
+sweep, converters from other note formats.
 
 MIT.

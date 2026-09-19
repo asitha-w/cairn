@@ -5,6 +5,14 @@ HERE=$(cd "$(dirname "$0")/.." && pwd); export PATH="$HERE/bin:$HOME/.local/bin:
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT; cp -r "$HERE/examples/bundle" "$T/b"; export CAIRN_BUNDLE="$T/b"; fail=0
 t() { local name=$1; shift; if "$@" >/dev/null 2>&1; then echo "PASS $name"; else echo "FAIL $name"; fail=1; fi; }
 t "iwe on PATH"                        command -v iwe
+t "crn --version"                      bash -c "crn --version | grep -q '^crn 0'"
+t "crn --help lists verbs"             bash -c "crn --help | grep -q sweep"
+t "per-verb --help"                    bash -c "crn sweep --help | grep -q fixture"
+t "pending --json"                     bash -c "crn pending --json | python3 -c 'import json,sys;assert json.load(sys.stdin)[0][\"key\"]'"
+t "find --json"                        bash -c "crn find peering --json | python3 -c 'import json,sys;assert any(r[\"key\"]==\"work/platform-431\" for r in json.load(sys.stdin))'"
+t "trail --dry-run runs"               bash -c "crn trail --dry-run | grep -q '^trail:'"
+t "init scaffolds a bundle"            bash -c "crn init $T/fresh | grep -q 'bundle ready' && test -f $T/fresh/.hooks/session-end.sh && test -f $T/fresh/.iwe/schemas/work.yaml"
+t "doctor runs"                        bash -c "CAIRN_BUNDLE=$T/b crn doctor | grep -q '^RESULT'"
 t "bundle validates"                   bash -c "crn validate | grep -qiv 'error\|violation' "
 t "find by system alias"               bash -c "crn find peering | grep -q 'work/platform-431'"
 t "find by state words"                bash -c "crn find compact | grep -q 'platform-419'"
