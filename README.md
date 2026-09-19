@@ -23,40 +23,52 @@ Every file is an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/
 concept: YAML frontmatter plus markdown, linked with ordinary markdown links. Nothing is stored
 anywhere else. No database is the truth, no model is called, nothing leaves the machine.
 
-## The handshake
+## A typical day, as a handshake
 
 ```
-   you / Claude                                 crn (deterministic)
-   ────────────                                 ───────────────────
+   you / Claude                                   crn (deterministic, no model)
+   ────────────                                   ─────────────────────────────
+   morning: "sweep"
+        crn sweep                   ────────►     gh search ×3: issues assigned to you, PRs asking
+                                                  your review, your PRs · match each issue to its
+                                                  node by URL · write gh_state / gh_updated /
+                                                  last_actor where they moved · propose a priority
+                                                  from your word lists · save .cairn/sweep.json
+                                    ◄────────     changed nodes · issues without a node · PR lists
+        crn graph --open            ────────►     read every node · edges from frontmatter and
+                                                  links · PRs from the last sweep · rank "what to
+                                                  start now" by fixed rules · write one HTML file
+                                    ◄────────     the picture, in your browser, zero tokens
+
    "let's work on peering"
-        crn find peering            ────────►   search the bundle
-                                    ◄────────   3 nodes, one state line each
-        crn open 431                ────────►   read one node
-                                    ◄────────   state · Now · Next · Log   (~700 tokens)
-        …work: kubectl, gh, PRs…                (never crn's business)
-        crn log 431 "NSGs applied"  ────────►   guarded write into the node
-   session ends                     ────────►   hook: crn trail folds the transcript into Log
-   "sweep"      crn sweep           ────────►   GitHub → gh fields, new issues, PRs
-                crn graph           ────────►   the picture, locally, for free
+        crn find peering            ────────►     iwe: BM25 over title and body + fuzzy on title
+                                                  and key, fused · filter to work/system/person
+                                    ◄────────     ranked nodes, one state line each
+        crn open 431                ────────►     resolve 431 → work/devops-431 (key, issue number,
+                                                  or slug prefix) · iwe retrieve · backlinks
+                                    ◄────────     header · state · Now · Next · Decisions ·
+                                                  Artifacts · Log · linked from   (~700 tokens)
+        gh issue view 431           ────────►     (GitHub, read-only: verify the dated claim)
+        …work: kubectl, terraform, PRs…           never crn's business
+
+   a milestone lands
+        crn log 431 "NSGs applied"  ────────►     iwe update, expect exactly 1 node · append a
+        crn decide / state / stage                dated line under Log (or Decisions) · set the
+        crn priority 431 2                        field · stamp updated · schema-validated before
+                                                  anything is written
+                                    ◄────────     "work/devops-431: logged"
+
+   you close the session            ────────►     hook: crn trail · scan new transcripts under your
+                                                  prefix · a tool call names a node by key, slug or
+                                                  issue ref → that node · one Log line per session
+                                                  per node: date, id, call count, 3 command heads ·
+                                                  never tool output or prompts · idempotent
 ```
 
-Judgment and every change to environments or code stay on the left. Everything on the right is a
-script: no model, read-only toward GitHub, writes only inside your bundle. Details and a with/without
-comparison: [docs/how-it-works.md](docs/how-it-works.md).
-
-## A typical day
-
-```bash
-crn sweep                 # morning: GitHub → nodes. Changed gh_* fields, issues without a node, PRs to review, your PRs
-crn graph --open          # the picture. Mode "what to start now" ranks the work and says why per row
-crn open 431              # pick one: state, Now, Next, links (or paste the card's "copy for Claude" line into your agent)
-                          # … work …
-crn log 431 "NSGs applied on dev"          # a milestone landed
-crn decide 431 "peer over private endpoints, cost"   # a decision landed
-crn state 431 "NSGs done; waiting on Sam for the CIDR"   # the one-line truth changed
-crn priority 431 2        # or reprioritise; `crn priority` alone prints your legend
-                          # close the agent session: the hook runs `crn trail` and the session lands in the node's Log
-```
+Everything on the left needs judgment, and every change to an environment or to code happens there
+under your permissions. Everything on the right is a script over your bundle: read-only toward GitHub,
+writes only inside the bundle, guarded by the schemas, and the same result every time for the same
+inputs. Longer version with the full flow: [docs/how-it-works.md](docs/how-it-works.md).
 
 Once in a while: `crn sweep --create` to turn newly assigned issues into stub nodes, `crn pending` for the
 plain list, `crn validate` after editing a node by hand, `crn doctor` when something feels off.
