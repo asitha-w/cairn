@@ -70,12 +70,12 @@
       <div id="stages"></div>
       <label class="chk"><input type="checkbox" id="showsys" checked> systems</label>
       <label class="chk"><input type="checkbox" id="showpeople" checked> people</label>
-      <label class="chk"><input type="checkbox" id="showrecords" checked> records <span class="hint" id="reccount"></span></label>
+      <label class="chk"><input type="checkbox" id="showrecords"> records everywhere <span class="hint" id="reccount"></span></label>
       <label class="chk"><input type="checkbox" id="showprs" checked> pull requests <span class="hint" id="prcount"></span></label>
       <label class="chk"><input type="checkbox" id="focus" checked> focus on selection</label>
     </fieldset>
     <fieldset><legend>legend</legend><div id="legend"></div></fieldset>
-    <div class="hint">Click a node for its card and to focus on its neighbours. Click empty space to clear. Drag to move, wheel to zoom, double-click to re-fit.</div>
+    <div class="hint">Click a node for its card and to focus on its neighbours; records (investigations, research, runbooks) appear there. Click empty space to clear. Drag to move, wheel to zoom, double-click to re-fit.</div>
     <div class="hint" id="stamp"></div>
   </div>
 </div>
@@ -92,7 +92,7 @@ G.edges.forEach(e => { byId[e.s].links++; byId[e.t].links++; });
 const nb = {}; G.edges.forEach(e => { (nb[e.s] = nb[e.s] || new Set()).add(e.t); (nb[e.t] = nb[e.t] || new Set()).add(e.s); });
 const stages = [...new Set(G.nodes.filter(n => n.stage).map(n => n.stage))];
 stages.forEach(s => { const l = document.createElement('label'); l.className = 'chk'; l.innerHTML = `<input type="checkbox" data-stage="${s}" ${s === 'done' ? '' : 'checked'}> ${s}`; $('stages').appendChild(l); });
-const recs = G.nodes.filter(n => n.type === 'record'); $('reccount').textContent = recs.length ? `(${recs.length})` : '';
+const recs = G.nodes.filter(n => n.type === 'record'); $('reccount').textContent = recs.length ? `(${recs.length}; shown around a selected node)` : '';
 const prs = G.nodes.filter(n => n.type === 'pr'); $('prcount').textContent = prs.length ? `(${prs.filter(p => p.role === 'review').length} to review · ${prs.filter(p => p.role === 'mine').length} mine)` : '(run crn sweep)';
 $('stamp').textContent = (G.generated_at ? `generated ${G.generated_at}` : '') + (G.swept_at ? ` · sweep ${G.swept_at.slice(0, 16)}` : '');
 
@@ -100,7 +100,7 @@ function visible(n) {
   if (n.type === 'system' && !$('showsys').checked) return false;
   if (n.type === 'person' && !$('showpeople').checked) return false;
   if (n.type === 'pr' && !$('showprs').checked) return false;
-  if (n.type === 'record' && !$('showrecords').checked) return false;
+  if (n.type === 'record' && !$('showrecords').checked && !(selected && $('focus').checked && (nb[selected.id] || new Set()).has(n.id)) && n !== selected) return false;
   if (n.type === 'work') { const c = $('stages').querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
   const q = $('q').value.trim().toLowerCase();
   if (q && !(n.title + ' ' + (n.state || '') + ' ' + n.id).toLowerCase().includes(q)) return false;
@@ -245,7 +245,7 @@ function renderList(mode) {
 }
 function visibleBase(n) {   // the show toggles and search, without the focus filter
   if (n.type === 'pr' && !$('showprs').checked) return false;
-  if (n.type === 'record' && !$('showrecords').checked) return false;
+  if (n.type === 'record' && !$('showrecords').checked && !(selected && $('focus').checked && (nb[selected.id] || new Set()).has(n.id)) && n !== selected) return false;
   if (n.type === 'work') { const c = $('stages').querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
   const q = $('q').value.trim().toLowerCase();
   return !(q && !(n.title + ' ' + (n.state || '') + ' ' + n.id).toLowerCase().includes(q));
