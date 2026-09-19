@@ -1,7 +1,5 @@
 # Cairn
 
-*Pronounced KAIRN. A cairn is the pile of stones on a hill path that lets you pick the route up again when the fog comes in.*
-
 Cairn gives coding agents persistent memory of your work across sessions, repositories and tools.
 
 It stores that memory as a local graph of plain Markdown, updated by deterministic tools and read by
@@ -215,3 +213,7 @@ local viewer; the three schemas; the example bundle; the skill and command; the 
 from other note formats.
 
 MIT.
+
+---
+
+*Cairn is pronounced KAIRN. A cairn is the pile of stones on a hill path that lets you pick the route up again when the fog comes in.*
