@@ -37,25 +37,24 @@ flowchart LR
     classDef store fill:#2a2415,stroke:#e0af68,color:#e6e6e6
     classDef ext fill:#2a1a1e,stroke:#f7768e,color:#e6e6e6
 
-    U([you: "let's work on peering"]):::human --> A1[agent turns words into a query]:::agent
-    A1 -->|crn find peering| C1[[crn: lexical + fuzzy search]]:::crn
-    C1 --> B[(bundle: work/ systems/ people/)]:::store
-    B --> C1
-    C1 -->|"one screen: nodes + state lines"| A2[agent picks, or asks which]:::agent
-    A2 -->|crn open 431| C2[[crn: node + links]]:::crn
-    C2 --> B
-    C2 -->|"~700 tokens: state, Now, Next, Log"| A3[agent verifies one dated claim]:::agent
-    A3 -->|gh issue view| GH[(GitHub)]:::ext
-    A3 --> W[work: kubectl, terraform, PRs<br/>under your permissions]:::agent
-    W -->|crn log / decide / state| C3[[crn: guarded write]]:::crn
+    U(["you: let us work on peering"]):::human --> A1["agent turns words into a query"]:::agent
+    A1 -->|"crn find peering"| C1[["crn: lexical and fuzzy search"]]:::crn
+    C1 <--> B[("bundle: work, systems, people")]:::store
+    C1 -->|"one screen: nodes and state lines"| A2["agent picks, or asks which"]:::agent
+    A2 -->|"crn open 431"| C2[["crn: node and links"]]:::crn
+    C2 <--> B
+    C2 -->|"about 700 tokens: state, Now, Next, Log"| A3["agent verifies one dated claim"]:::agent
+    A3 -->|"gh issue view"| GH[("GitHub")]:::ext
+    A3 --> W["work: kubectl, terraform, PRs<br/>under your permissions"]:::agent
+    W -->|"crn log, decide, state"| C3[["crn: guarded write"]]:::crn
     C3 --> B
-    U2([you close the session]):::human -->|SessionEnd hook| C4[[crn trail]]:::crn
-    T[(transcripts)]:::ext --> C4
+    U2(["you close the session"]):::human -->|"SessionEnd hook"| C4[["crn trail"]]:::crn
+    T[("transcripts")]:::ext --> C4
     C4 -->|"one Log line per node"| B
-    S([you: "sweep"]):::human -->|crn sweep| C5[[crn: 3 gh searches]]:::crn
+    S(["you: sweep"]):::human -->|"crn sweep"| C5[["crn: three gh searches"]]:::crn
     GH --> C5
-    C5 -->|gh_* fields, new issues, PRs| B
-    B -->|crn graph| V[viewer: graph · list · what to start now]:::store
+    C5 -->|"gh fields, new issues, PRs"| B
+    B -->|"crn graph"| V["viewer: graph, list, what to start now"]:::store
 ```
 
 Legend: blue is you, purple is the agent (judgment, and the only thing that changes environments or
