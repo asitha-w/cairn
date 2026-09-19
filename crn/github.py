@@ -75,6 +75,10 @@ def sweep(bundle, cfg, fixture=None, create=False, as_json=False):
               "prs_mine": sorted(prs_mine, key=lambda p: p["updated"], reverse=True)}
     (bundle / ".cairn").mkdir(exist_ok=True)
     (bundle / ".cairn" / "sweep.json").write_text(json.dumps({"at": NOW.isoformat(timespec="seconds"), **result}, ensure_ascii=False))
+    from .graph import graph as _graph
+    import io, contextlib
+    with contextlib.redirect_stdout(io.StringIO()): _graph(bundle, cfg, "html")   # the picture follows the sweep
+    result["graph"] = str(bundle / ".cairn" / "graph.html")
     if as_json: print(json.dumps(result, indent=1, ensure_ascii=False)); return 0
     print(f"sweep: {result['items']} items · {len(changed)} node(s) updated · {len(new)} without a node")
     for c in changed: print(f"  updated {c['key']}: gh_state={c['state']} gh_updated={str(c['updated'])[:10]}" + (f" priority P{c['proposed_priority']} (proposed)" if c.get("proposed_priority") else ""))
@@ -86,4 +90,5 @@ def sweep(bundle, cfg, fixture=None, create=False, as_json=False):
     if prs_mine:
         print(f"your open PRs ({len(prs_mine)}):")
         for p in result["prs_mine"]: print(f"  {p['owner']}/{p['repo']}#{p['number']} {p['title'][:70]} · {str(p['updated'])[:10]}{' · has node' if p['has_node'] else ''}")
+    print(f"graph refreshed: {result['graph']}")
     return 0

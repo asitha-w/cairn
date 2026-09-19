@@ -24,10 +24,10 @@ def init(target):
     except FileNotFoundError:
         die("iwe is not on PATH; install it first (https://github.com/iwe-org/iwe/releases) then rerun")
     sd = d / ".iwe" / "schemas"
-    for s in ("work", "system", "person"): shutil.copy(HERE / "schemas" / f"{s}.yaml", sd / f"{s}.yaml")
+    for s in ("work", "system", "person", "record"): shutil.copy(HERE / "schemas" / f"{s}.yaml", sd / f"{s}.yaml")
     cfg = d / ".iwe" / "config.toml"
-    cfg.write_text(cfg.read_text() + '\n[schemas.work]\nmatch = "work/**"\n\n[schemas.system]\nmatch = "systems/**"\n\n[schemas.person]\nmatch = "people/**"\n')
-    for sub in ("work", "systems", "people", "artifacts", ".cairn", ".hooks"): (d / sub).mkdir(exist_ok=True)
+    cfg.write_text(cfg.read_text() + '\n[schemas.work]\nmatch = "work/**"\n\n[schemas.system]\nmatch = "systems/**"\n\n[schemas.person]\nmatch = "people/**"\n\n[schemas.record]\nmatch = "records/**"\n')
+    for sub in ("work", "systems", "people", "records", "artifacts", ".cairn", ".hooks"): (d / sub).mkdir(exist_ok=True)
     (d / "cairn.toml").write_text((HERE / "examples" / "cairn.example.toml").read_text())
     (d / ".hooks" / "session-end.sh").write_text(HOOK.format(bundle=d)); (d / ".hooks" / "session-end.sh").chmod(0o755)
     (d / ".gitignore").write_text(".cairn/\n")
@@ -38,6 +38,7 @@ def init(target):
 2. export CAIRN_BUNDLE={d}        put it in your shell profile or in .claude/settings.json "env"
 3. crn sweep --create             one work node per open issue assigned to you
 4. write systems/<slug>.md        one per thing you operate: access, look_in, aliases, Gotchas
+5. records/<slug>.md, optional   one pointer per investigation, research write-up or runbook you want findable
 
 Claude Code wiring (optional, zero tokens at startup):
   ln -sfn {HERE}/skills/cairn ~/.claude/skills/cairn

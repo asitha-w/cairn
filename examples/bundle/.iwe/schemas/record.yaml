@@ -1,0 +1,18 @@
+$schema: https://document-schema.org/draft/2026-06/schema
+description: Cairn record node — a finding that lives in a file elsewhere (an investigation, a research write-up, a runbook). The node is the pointer; the file stays where it is.
+frontmatter:
+  type: object
+  required: [type, title, state, resource]
+  properties:
+    type: { const: record }
+    title: { type: string, minLength: 3 }
+    state: { type: string, minLength: 3, maxLength: 240, description: "the finding in one sentence; what search shows" }
+    kind: { enum: [investigation, research, runbook, report, note], description: "what sort of record" }
+    resource: { type: string, description: "path or URL of the file this record points at" }
+    date: { type: string, format: date }
+    env: { type: array, items: { type: string } }
+    systems: { type: array, items: { type: string }, description: "slugs of system nodes" }
+    work: { type: array, items: { type: string }, description: "keys of work nodes this record informed" }
+    tags: { type: array, items: { type: string } }
+maxTokens: 600
+additionalSections: true

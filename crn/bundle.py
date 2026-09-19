@@ -71,7 +71,7 @@ def resolve(bundle, s):
     s = s.strip().rstrip("/")
     allk = {key_of(n): n for n in nodes(bundle)}
     if s in allk: return s
-    for pre in ("work/", "systems/", "people/"):
+    for pre in ("work/", "systems/", "people/", "records/"):
         if pre + s in allk: return pre + s
     if s.isdigit() or "#" in s:
         num = s.split("#")[-1]

@@ -33,6 +33,11 @@ def open_node(bundle, subject, as_json=False):
     back = [b for b in iwe(bundle, "find", "--references", k, "--format", "keys").split() if b != k]
     if as_json:
         print(json.dumps({"key": k, "frontmatter": f, "body": body, "linked_from": back}, indent=1, ensure_ascii=False)); return 0
+    if f.get("type") == "record":
+        print(f"{k} · {f.get('kind', 'record')} · {f.get('date', '')} → {f.get('resource')}")
+        print(f"finding: {f.get('state')}")
+        if f.get("systems"): print("systems " + ", ".join(f["systems"]))
+        print()
     if f.get("type") == "work":
         print(f"{k} · {f.get('stage')} · updated {str(f.get('updated', ''))[:10]} · gh {f.get('gh_state', '?')} {str(f.get('gh_updated', ''))[:10]} last {f.get('last_actor', '?')}")
         print(f"state: {f.get('state')}")

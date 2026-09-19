@@ -16,6 +16,7 @@ my-graph/
   work/platform-431.md       one piece of work: one-line state, Now, Next, Decisions, Artifacts, Log
   systems/database.md        one thing you operate: how to reach it, where its config lives, gotchas
   people/sam.md              someone work waits on
+  records/…                  pointers to findings that live elsewhere: an investigation, a research write-up, a runbook
   artifacts/…                files a piece of work produced, named so you never need to open them
 ```
 
@@ -80,6 +81,10 @@ folder into a queryable graph: full-text and fuzzy search, retrieval with linked
 validation, and guarded atomic edits. Your editor gets an LSP for the same files. Cairn does not
 reimplement any of that.
 
+Four node types: **work** (a piece of work), **system** (a thing you operate), **person**, and **record**
+(a pointer to a finding that lives in a file elsewhere, with the finding as its one-line state, so
+investigations, research and runbooks are searchable without moving them).
+
 **`crn` does the work verbs.** A small Python package, standard library only (3.11+), that calls `iwe`
 and adds what a work graph needs. `crn --help` lists the verbs, `crn <verb> --help` explains one, every
 read verb takes `--json`:
@@ -92,7 +97,7 @@ read verb takes `--json`:
 | `crn state <node> "…"` / `crn stage <node> <stage>` | set the one-line state / move between active, parked, blocked, done | the node |
 | `crn priority [<node> [<n>]]` | print the bundle's priority legend, a node's level, or set it; levels and their names are yours, in `cairn.toml` | the node |
 | `crn log <node> "…"` / `crn decide <node> "…"` | append a dated line under Log or Decisions | the node |
-| `crn sweep [--create]` | refresh `gh_*` fields from GitHub; list assigned issues with no node, PRs requesting your review, and your open PRs | the node's `gh_*` fields only |
+| `crn sweep [--create]` | refresh `gh_*` fields from GitHub; list assigned issues with no node, PRs requesting your review, and your open PRs; then regenerate the viewer | the node's `gh_*` fields, `.cairn/sweep.json`, `.cairn/graph.html` |
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
 | `crn validate` | `iwe schema validate`; exit 1 on any violation | no |
 | `crn systems` | system nodes with how many work nodes point at them | no |
