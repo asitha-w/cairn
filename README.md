@@ -68,6 +68,7 @@ read verb takes `--json`:
 | `crn open <node>` | one node with its links; `<node>` is a key, a bare issue number or a slug prefix | no |
 | `crn pending` | work whose stage is active, parked or blocked, newest first | no |
 | `crn state <node> "…"` / `crn stage <node> <stage>` | set the one-line state / move between active, parked, blocked, done | the node |
+| `crn priority [<node> [<n>]]` | print the bundle's priority legend, a node's level, or set it; levels and their names are yours, in `cairn.toml` | the node |
 | `crn log <node> "…"` / `crn decide <node> "…"` | append a dated line under Log or Decisions | the node |
 | `crn sweep [--create]` | refresh `gh_*` fields from GitHub; list assigned issues with no node, PRs requesting your review, and your open PRs | the node's `gh_*` fields only |
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
@@ -76,7 +77,9 @@ read verb takes `--json`:
 | `crn init <dir>` / `crn doctor` | scaffold a bundle and print the wiring steps / check python, iwe, gh, env, config, schemas, hook, skill | a new bundle / no |
 
 Two writers never touch the same field. You (or your agent, on your say-so) own `state`, `stage`,
-`Now`, `Next`, `Decisions`. The producers own `gh_state`, `gh_updated`, `last_actor` and `Log`. The
+`Now`, `Next`, `Decisions`, `priority`. The producers own `gh_state`, `gh_updated`, `last_actor` and `Log`;
+`crn sweep` may propose a `priority` from words you configure, marked `priority_by: sweep`, and never
+overwrites one a human set. The
 schemas in `schemas/` are the contract and `crn validate` enforces it.
 
 ## The shape of a work node

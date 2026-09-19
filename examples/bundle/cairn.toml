@@ -7,3 +7,13 @@ user = "me"
 [trail]
 transcripts = "~/.claude/projects"   # where Claude Code writes session transcripts
 prefix = "-home-me-work-acme"             # encoded project dir prefix; only transcripts under it are folded into ## Log
+
+[priority]
+# Your legend, 1 is highest. Rename, add or remove levels; the product only knows the count.
+levels = ["Outage or special ask", "Security", "Cost", "Everything else"]
+
+[priority.match]
+# Words (regex alternatives) that let `crn sweep` propose a level from an issue's title and labels. Optional.
+"1" = ["outage", "incident", "\\bprod\\b", "production", "is down", "data loss"]
+"2" = ["security", "\\bcve\\b", "secret", "credential", "token", "firewall"]
+"3" = ["cost", "reservation", "budget", "spend", "billing"]

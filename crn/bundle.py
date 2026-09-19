@@ -92,3 +92,19 @@ def out(rows, as_json, render):
     """Print rows as JSON or through render(rows)."""
     if as_json: print(json.dumps(rows, indent=1, ensure_ascii=False))
     else: print(render(rows))
+
+
+def legend(cfg):
+    """[(level, label)] from cairn.toml [priority].levels; empty when the bundle defines no priorities."""
+    lv = (cfg.get("priority") or {}).get("levels") or []
+    return [(i + 1, str(l)) for i, l in enumerate(lv)]
+
+
+def propose_priority(cfg, text):
+    """Lowest level whose word list matches text (case-insensitive regex alternatives); None if no list matches."""
+    match = (cfg.get("priority") or {}).get("match") or {}
+    import re as _re
+    for lvl in sorted(match, key=lambda k: int(k)):
+        words = match[lvl]
+        if words and _re.search("|".join(words), text or "", _re.I): return int(lvl)
+    return None

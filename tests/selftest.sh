@@ -27,6 +27,11 @@ t "sweep updates gh fields (fixture)"  bash -c "crn sweep --fixture $HERE/exampl
 t "sweep lists issues without a node"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'new .*platform#512'"
 t "sweep lists review requests and my PRs" bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'review requested from you (1)' && crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'your open PRs (1)'"
 t "sweep --create makes a valid node"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json --create >/dev/null && test -f $T/b/work/platform-512.md && crn validate | grep -qiv 'error\|violation'"
+t "priority legend prints"             bash -c "crn priority | grep -q 'P1  Outage'"
+t "priority set by word"               bash -c "crn priority 431 security && grep -q 'priority: 2' $T/b/work/platform-431.md && grep -q 'priority_by: human' $T/b/work/platform-431.md"
+t "priority bad word exits 1"          bash -c "! crn priority 431 urgent"
+t "pending sorts P1 first"             bash -c "crn priority 419 1 >/dev/null && crn pending | head -1 | grep -q 'P1 .*platform-419'"
+t "sweep proposes, never overwrites"   bash -c "crn sweep --fixture $HERE/examples/github-fixture.json --create >/dev/null && grep -q 'priority: 3' $T/b/work/platform-512.md || grep -q 'priority_by: sweep' $T/b/work/platform-512.md; grep -q 'priority: 2' $T/b/work/platform-431.md"
 t "unknown node exits 1"               bash -c "! crn open nothing-here-xyz"
 t "still valid after writes"           bash -c "crn validate | grep -qiv 'error\|violation'"
 [ $fail -eq 0 ] && echo "RESULT PASS" || echo "RESULT FAIL"; exit $fail

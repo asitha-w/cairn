@@ -6,10 +6,10 @@ A fixture file (see examples/github-fixture.json) stands in for GitHub in tests.
 """
 import json, re, subprocess
 from pathlib import Path
-from .bundle import iwe, nodes, fm, key_of, die, TODAY, NOW
+from .bundle import iwe, nodes, fm, key_of, die, TODAY, NOW, propose_priority, legend
 
 ISSUE_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/(?:issues|pull)/(\d+)")
-FIELDS = "repository,number,title,state,updatedAt,url"
+FIELDS = "repository,number,title,state,updatedAt,url,labels"
 
 
 def _search(kind, *flags):
@@ -22,7 +22,7 @@ def _search(kind, *flags):
     for i in json.loads(p.stdout):
         owner, repo = i["repository"]["nameWithOwner"].split("/")
         rows.append({"owner": owner, "repo": repo, "number": i["number"], "title": i["title"], "state": i["state"].lower(),
-                     "updated": i["updatedAt"], "last_actor": None, "url": i["url"]})
+                     "updated": i["updatedAt"], "last_actor": None, "url": i["url"], "labels": [l["name"] for l in i.get("labels") or []]})
     return rows
 
 
@@ -37,8 +37,9 @@ def fetch(cfg, fixture=None):
     return issues, _search("prs", "--owner", org, "--review-requested", user, "--state", "open"), _search("prs", "--owner", org, "--author", user, "--state", "open")
 
 
-def stub(it):
-    return (f"---\ntype: work\ntitle: {json.dumps(it['title'], ensure_ascii=False)}\nstate: \"new from sweep, not yet triaged\"\nstage: active\n"
+def stub(it, prio=None):
+    pr = f"priority: {prio}\npriority_by: sweep\n" if prio else ""
+    return (f"---\ntype: work\ntitle: {json.dumps(it['title'], ensure_ascii=False)}\nstate: \"new from sweep, not yet triaged\"\nstage: active\n{pr}"
             f"resource: {it['url']}\nenv: []\nsystems: []\npeople: []\nblocked_by: []\ngh_state: {it['state']}\ngh_updated: {json.dumps(it['updated'])}\n"
             f"generated: {{ by: \"crn/sweep\", at: \"{NOW.isoformat(timespec='seconds')}\" }}\nupdated: {TODAY}\n---\n# {it['title']}\n\n"
             f"## Now\n\nCreated by `crn sweep` on {TODAY}; state not yet written.\n\n## Next\n\n1. Triage.\n\n## Decisions\n\n## Artifacts\n\n## Log\n\n- {TODAY} created by sweep\n")
@@ -57,12 +58,16 @@ def sweep(bundle, cfg, fixture=None, create=False, as_json=False):
         if f.get("gh_state") != it["state"]: sets += ["--set", f"gh_state={it['state']}"]
         if str(f.get("gh_updated", ""))[:19] != str(it["updated"])[:19]: sets += ["--set", f"gh_updated={json.dumps(it['updated'])}"]
         if it.get("last_actor") and f.get("last_actor") != it["last_actor"]: sets += ["--set", f"last_actor={it['last_actor']}"]
+        if not f.get("priority") and legend(cfg):
+            pr = propose_priority(cfg, it["title"] + " " + " ".join(it.get("labels") or []))
+            if pr: sets += ["--set", f"priority={pr}", "--set", "priority_by=sweep"]; it["proposed_priority"] = pr
         if sets:
             iwe(bundle, "update", "-k", key_of(n), "--expect", "1", *sets); changed.append({"key": key_of(n), **it})
     new = [it for ident, it in issues.items() if ident not in seen]
     if create:
         for it in new:
-            k = f"work/{it['repo']}-{it['number']}"; iwe(bundle, "create", k, "-c", "-", inp=stub(it)); created.append(k)
+            pr = propose_priority(cfg, it["title"] + " " + " ".join(it.get("labels") or [])) if legend(cfg) else None
+            k = f"work/{it['repo']}-{it['number']}"; iwe(bundle, "create", k, "-c", "-", inp=stub(it, pr)); created.append(k)
     noded = {str(fm(n).get("resource", "")).rstrip("/") for n in work}
     for p in prs_mine: p["has_node"] = p["url"].rstrip("/") in noded
     result = {"items": len(issues), "changed": changed, "new": new, "created": created,
@@ -70,7 +75,7 @@ def sweep(bundle, cfg, fixture=None, create=False, as_json=False):
               "prs_mine": sorted(prs_mine, key=lambda p: p["updated"], reverse=True)}
     if as_json: print(json.dumps(result, indent=1, ensure_ascii=False)); return 0
     print(f"sweep: {result['items']} items · {len(changed)} node(s) updated · {len(new)} without a node")
-    for c in changed: print(f"  updated {c['key']}: gh_state={c['state']} gh_updated={str(c['updated'])[:10]}")
+    for c in changed: print(f"  updated {c['key']}: gh_state={c['state']} gh_updated={str(c['updated'])[:10]}" + (f" priority P{c['proposed_priority']} (proposed)" if c.get("proposed_priority") else ""))
     for it in new: print(f"  new     {it['owner']}/{it['repo']}#{it['number']} {it['title'][:70]}")
     for k in created: print(f"          created {k}")
     if prs_review:

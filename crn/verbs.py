@@ -1,9 +1,9 @@
-"""verbs.py — the read and write verbs over nodes: find, open, pending, systems, validate, state, stage, log, decide.
+"""verbs.py — the read and write verbs over nodes: find, open, pending, priority, systems, validate, state, stage, log, decide.
 
 Reads print one screen (or --json). Writes are guarded iwe updates on exactly one node and stamp `updated`.
 """
 import json
-from .bundle import iwe, iwe_json, nodes, fm, key_of, resolve, node_fm, out, die, TODAY, STAGES
+from .bundle import iwe, iwe_json, nodes, fm, key_of, resolve, node_fm, out, die, TODAY, STAGES, legend
 
 
 def short(s, n): s = s or ""; return s if len(s) <= n else s[: n - 1] + "…"
@@ -44,13 +44,39 @@ def open_node(bundle, subject, as_json=False):
     return 0
 
 
+STAGE_ORDER = {"active": 0, "blocked": 1, "parked": 2, "done": 3}
+
+
 def pending(bundle, as_json=False, stage=None):
     want = (stage,) if stage else ("active", "parked", "blocked")
     rows = [n for n in nodes(bundle, "type: work") if fm(n).get("stage") in want]
     rows.sort(key=lambda n: str(fm(n).get("updated", "")), reverse=True)
-    hits = [{"key": key_of(n), "stage": fm(n).get("stage"), "updated": str(fm(n).get("updated", ""))[:10], "state": fm(n).get("state"), "title": n.get("title")} for n in rows]
+    rows.sort(key=lambda n: (int(fm(n).get("priority") or 9), STAGE_ORDER.get(fm(n).get("stage"), 9)))   # stable: priority, stage, then newest
+    hits = [{"key": key_of(n), "priority": fm(n).get("priority"), "stage": fm(n).get("stage"), "updated": str(fm(n).get("updated", ""))[:10],
+             "state": fm(n).get("state"), "title": n.get("title")} for n in rows]
     if not hits: print("nothing pending" if not as_json else "[]"); return 0
-    out(hits, as_json, lambda hs: "\n".join(f"{h['stage']:7s} {h['key']:34s} {h['updated']}  {short(str(h['state'] or ''), 80)}" for h in hs)); return 0
+    def pr(h): return f"P{h['priority']}" if h["priority"] else "  "
+    out(hits, as_json, lambda hs: "\n".join(f"{pr(h)} {h['stage']:7s} {h['key']:34s} {h['updated']}  {short(str(h['state'] or ''), 76)}" for h in hs)); return 0
+
+
+def priority(bundle, cfg, subject=None, value=None):
+    """No node: print the legend. Node only: legend plus the node's current level. Node and value (number or legend word): set it."""
+    lg = legend(cfg)
+    if not lg: die("this bundle defines no priorities; add [priority].levels = [\"…\", …] to cairn.toml (1 is highest)")
+    k = resolve(bundle, subject) if subject else None
+    if value is None:
+        cur = node_fm(bundle, k).get("priority") if k else None
+        print(f"{len(lg)} levels" + (f" · {k} is P{cur}" if k and cur else f" · {k} has none" if k else ""))
+        for i, l in lg: print(f"  P{i}  {l}")
+        if k: print(f"set: crn priority {subject} <1-{len(lg)}>")
+        return 0
+    if value.isdigit() and 1 <= int(value) <= len(lg): lvl = int(value)
+    else:
+        hits = [i for i, l in lg if value.lower() in l.lower()]
+        if len(hits) != 1: die(f"'{value}' does not name one level; use 1-{len(lg)} or a word from the legend (crn priority)")
+        lvl = hits[0]
+    iwe(bundle, "update", "-k", k, "--expect", "1", "--set", f"priority={lvl}", "--set", "priority_by=human", "--set", f"updated={TODAY}")
+    print(f"{k}: P{lvl} {dict(lg)[lvl]}"); return 0
 
 
 def systems(bundle, as_json=False):

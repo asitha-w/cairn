@@ -16,6 +16,8 @@ frontmatter:
     gh_state: { enum: [open, closed, merged] }
     gh_updated: { type: string }
     last_actor: { type: string }
+    priority: { type: integer, minimum: 1, maximum: 9, description: "1 is highest; the legend for each level is in cairn.toml [priority].levels" }
+    priority_by: { enum: [human, sweep], description: "sweep proposes from words; a human value is never overwritten" }
     updated: { type: string, format: date }
     generated:
       type: object
