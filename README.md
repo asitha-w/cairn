@@ -51,6 +51,23 @@ sweep: 5 items · 1 node(s) updated · 1 without a node
   new     acme/platform#512 Alert on backup freshness for the object store
 ```
 
+## A typical day
+
+```bash
+crn sweep                 # morning: GitHub → nodes. Changed gh_* fields, issues without a node, PRs to review, your PRs
+crn graph --open          # the picture. Mode "what to start now" ranks the work and says why per row
+crn open 431              # pick one: state, Now, Next, links (or paste the card's "copy for Claude" line into your agent)
+                          # … work …
+crn log 431 "NSGs applied on dev"          # a milestone landed
+crn decide 431 "peer over private endpoints, cost"   # a decision landed
+crn state 431 "NSGs done; waiting on Sam for the CIDR"   # the one-line truth changed
+crn priority 431 2        # or reprioritise; `crn priority` alone prints your legend
+                          # close the agent session: the hook runs `crn trail` and the session lands in the node's Log
+```
+
+Once in a while: `crn sweep --create` to turn newly assigned issues into stub nodes, `crn pending` for the
+plain list, `crn validate` after editing a node by hand, `crn doctor` when something feels off.
+
 ## The two halves
 
 **`iwe` does the graph.** [IWE](https://github.com/iwe-org/iwe) (Rust, Apache 2.0) turns a markdown
