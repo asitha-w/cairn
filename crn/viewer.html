@@ -197,7 +197,7 @@ function draw() {
       ctx.font = `${bold ? 'bold ' : ''}${((n.type === 'work' ? 11 : 10) + (n === selected ? 2 : 0)) / scale}px system-ui`;
       const maxLen = bold ? 48 : 34;
       ctx.fillText(n.title.length > maxLen ? n.title.slice(0, maxLen - 1) + '…' : n.title, n.x + r + 3, n.y + 4 / scale);
-      if (isNb) {   // one line of context under a neighbour: how it relates, and what it says about itself
+      if (isNb && vis.length <= 22) {   // one line of context under a neighbour, when there is room for it
         const rel = relations(selected)[n.id]; const relTxt = rel ? [...rel].join(', ') : '';
         const ctxTxt = n.type === 'work' ? (n.state || '') : n.type === 'system' ? (n.state || '') : n.type === 'record' ? ((n.kind || 'record') + ' ' + (n.date || '') + ' · ' + (n.state || '')) : n.type === 'pr' ? (n.role === 'review' ? 'requests your review' : 'your open PR') + ' · ' + n.updated : '';
         const line2 = [relTxt, n.type === 'work' && n.stage ? n.stage + (n.priority ? ' P' + n.priority : '') : '', ctxTxt].filter(Boolean).join(' · ');
