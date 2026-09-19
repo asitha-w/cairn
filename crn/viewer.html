@@ -110,7 +110,7 @@ function visible(n) {
 function groupKey(n) {
   const g = $('group').value;
   if (g === 'repo') return n.repo || (n.type === 'system' ? 'systems' : n.type === 'person' ? 'people' : n.type === 'record' ? 'records' : 'other');
-  if (g === 'system') return n.type === 'system' ? n.id : (n.systems && n.systems[0] ? 'systems/' + n.systems[0] : n.type === 'work' ? 'none' : n.type);
+  if (g === 'system') return n.type === 'system' ? n.id : (n.systems && n.systems[0] ? 'systems/' + n.systems[0] : n.type === 'work' ? 'no system' : n.type);
   if (g === 'stage') return n.stage || n.type;
   if (g === 'priority') return n.priority ? 'P' + n.priority : (n.type === 'work' ? 'unset' : n.type);
   return null;
@@ -145,12 +145,15 @@ function legend() {
 const centers = {};
 function step() {
   const vis = G.nodes.filter(visible); const gk = $('group').value;
-  const groups = [...new Set(vis.map(groupKey))].filter(x => x !== null && !hub(x));
-  const R = 140 + 26 * Math.sqrt(vis.length);
+  const counts = {}; vis.forEach(n => { const g = groupKey(n); if (g !== null && !hub(g)) counts[g] = (counts[g] || 0) + 1; });
+  // a group earns a hull only with two or more members; singletons and hubs float in the middle
+  const groups = Object.keys(counts).filter(g => counts[g] >= 2).sort((a, b) => counts[b] - counts[a]);
+  for (const k in centers) if (!groups.includes(k)) delete centers[k];
+  const R = Math.max(140 + 26 * Math.sqrt(vis.length), groups.length * 95 / (2 * Math.PI));
   groups.forEach((g, i) => { const a = (i / groups.length) * Math.PI * 2 - Math.PI / 2; centers[g] = { x: Math.cos(a) * R, y: Math.sin(a) * R }; });
   for (const n of vis) {
-    const g = groupKey(n); const c = gk === 'none' || hub(g) || !centers[g] ? { x: 0, y: 0 } : centers[g];
-    const k = gk === 'none' ? 0.002 : (hub(g) || !centers[g]) ? 0.006 : 0.05;
+    const g = groupKey(n); const grouped = gk !== 'none' && centers[g];
+    const c = grouped ? centers[g] : { x: 0, y: 0 }; const k = gk === 'none' ? 0.002 : grouped ? 0.05 : 0.006;
     n.vx += (c.x - n.x) * k; n.vy += (c.y - n.y) * k;
   }
   for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
@@ -172,12 +175,14 @@ function draw() {
     const mem = vis.filter(n => groupKey(n) === g); if (!mem.length) continue;
     const cx = mem.reduce((s, n) => s + n.x, 0) / mem.length, cy = mem.reduce((s, n) => s + n.y, 0) / mem.length;
     const rr = Math.max(40, ...mem.map(n => Math.hypot(n.x - cx, n.y - cy) + radius(n) + 18));
-    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fillStyle = 'rgba(122,162,247,0.05)'; ctx.fill(); ctx.strokeStyle = 'rgba(122,162,247,0.25)'; ctx.lineWidth = 1 / scale; ctx.stroke();
-    ctx.font = `bold ${18 / scale}px system-ui`; ctx.fillStyle = css('--fg'); ctx.textAlign = 'center'; ctx.fillText(`${g} · ${mem.length}`, cx, cy - rr - 10 / scale); ctx.textAlign = 'left';
+    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fillStyle = 'rgba(122,162,247,0.035)'; ctx.fill(); ctx.strokeStyle = 'rgba(122,162,247,0.2)'; ctx.lineWidth = 1 / scale; ctx.stroke();
+    const many = Object.keys(centers).length > 8;
+    ctx.font = `bold ${(many ? 12 : 18) / scale}px system-ui`; ctx.fillStyle = css('--fg'); ctx.textAlign = 'center'; ctx.fillText(`${g.replace(/^systems\//, '')} · ${mem.length}`, cx, cy - rr - 8 / scale); ctx.textAlign = 'left';
   }
   for (const e of G.edges) { const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
     const hot = selected && (a === selected || b === selected);
-    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : e.rel === 'waits_on' ? css('--person') : 'rgba(139,147,167,0.3)'; ctx.lineWidth = (hot ? 2 : 1) / scale;
+    const dim = G.edges.length > 250 ? 0.14 : 0.3;
+    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : e.rel === 'waits_on' ? css('--person') : `rgba(139,147,167,${dim})`; ctx.lineWidth = (hot ? 2 : 1) / scale;
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
   const q = $('q').value.trim(), focused = selected && $('focus').checked;
   for (const n of vis) { const r = radius(n); ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fillStyle = colour(n); ctx.fill();
