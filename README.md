@@ -2,11 +2,12 @@
 
 *Pronounced KAIRN. A cairn is the pile of stones on a hill path that lets you pick the route up again when the fog comes in.*
 
-Cairn is your work as a graph of plain markdown files, kept current by small deterministic tools,
-read by you in your editor and by your coding agent through a CLI. It exists to solve one problem:
-**a coding-agent session dies and the context dies with it.** You kill a long Claude Code session,
-open a new one the next morning, and pay the onboarding tax again: which issue was this, what did we
-decide, what did we actually run, who are we waiting on.
+Cairn gives coding agents persistent memory of your work across sessions, repositories and tools.
+
+It stores that memory as a local graph of plain Markdown, updated by deterministic tools and read by
+both humans and agents. It exists because **a coding-agent session dies and the context dies with it**:
+you kill a long Claude Code session, open a new one the next morning, and pay the onboarding tax
+again: which issue was this, what did we decide, what did we actually run, who are we waiting on.
 
 Cairn keeps the answer in a folder you own:
 
