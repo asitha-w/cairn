@@ -17,7 +17,7 @@ finds the bundle from `$CAIRN_BUNDLE`. Every verb prints one screen; print it as
 | we work | the work itself (gh, kubectl, editors) | anything that changes an environment or code stays with you and the user's permissions |
 | a milestone lands | `crn log <key> "what landed"`; a decision: `crn decide <key> "…"`; a new truth: `crn state <key> "one sentence"` | say that you recorded it |
 | "what should I pick up" | `crn pending` | the list, as printed. Do not summarise or re-rank. |
-| "do a sweep" | `crn sweep` (`--create` to add nodes for new issues) | list the new and changed items; the user decides what becomes a node |
+| "do a sweep" / "what is waiting on me" | `crn sweep` (`--create` to add nodes for new issues) | print it: changed nodes, issues without a node, PRs requesting review, your open PRs. The user decides what becomes a node. |
 
 ## Rules
 

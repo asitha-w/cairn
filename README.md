@@ -68,7 +68,7 @@ what a work graph needs:
 | `crn pending` | work whose stage is active, parked or blocked, newest first | no |
 | `crn state <node> "…"` / `crn stage <node> <stage>` | set the one-line state / move between active, parked, blocked, done | the node |
 | `crn log <node> "…"` / `crn decide <node> "…"` | append a dated line under Log or Decisions | the node |
-| `crn sweep [--create]` | refresh `gh_*` fields from GitHub; list open issues assigned to you that have no node | the node's `gh_*` fields only |
+| `crn sweep [--create]` | refresh `gh_*` fields from GitHub; list assigned issues with no node, PRs requesting your review, and your open PRs | the node's `gh_*` fields only |
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
 | `crn validate` | `iwe schema validate` | no |
 | `crn systems` | system nodes with how many work nodes point at them | no |

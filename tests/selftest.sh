@@ -17,6 +17,7 @@ t "decide appends under ## Decisions"  bash -c "crn decide 431 'selftest decisio
 t "state sets one sentence"            bash -c "crn state 362 'selftest state' && grep -q 'state: selftest state' $T/b/work/platform-362.md"
 t "sweep updates gh fields (fixture)"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'updated work/platform-431'"
 t "sweep lists issues without a node"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'new .*platform#512'"
+t "sweep lists review requests and my PRs" bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'review requested from you (1)' && crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'your open PRs (1)'"
 t "sweep --create makes a valid node"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json --create >/dev/null && test -f $T/b/work/platform-512.md && crn validate | grep -qiv 'error\|violation'"
 t "unknown node exits 1"               bash -c "! crn open nothing-here-xyz"
 t "still valid after writes"           bash -c "crn validate | grep -qiv 'error\|violation'"

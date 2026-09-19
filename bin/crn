@@ -9,7 +9,8 @@
   crn stage <node> <stage>       active | parked | blocked | done
   crn log <node> "<text>"        append a dated line under ## Log
   crn decide <node> "<text>"     append a dated line under ## Decisions
-  crn sweep [--fixture F] [--create]   refresh gh_* fields from GitHub (or a fixture); list issues with no node
+  crn sweep [--fixture F] [--create]   refresh gh_* fields from GitHub (or a fixture); list assigned issues with no node,
+                                       PRs requesting your review, and your open PRs
   crn trail                      fold new Claude Code transcripts into ## Log (one line per session per node)
   crn validate                   iwe schema validate
   crn systems                    system nodes with the number of work nodes linking to them
@@ -150,26 +151,31 @@ def cmd_decide(bundle, a):
 # ------------------------------------------------------------------ producers
 ISSUE_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/(?:issues|pull)/(\d+)")
 
+def _gh_search(kind, *flags):
+    out = subprocess.run(["gh", "search", kind, *flags, "--json", "repository,number,title,state,updatedAt,url", "--limit", "200"], capture_output=True, text=True)
+    if out.returncode != 0: die(f"gh search {kind} failed: " + out.stderr.strip()[:200])
+    rows = []
+    for i in json.loads(out.stdout):
+        owner, repo = i["repository"]["nameWithOwner"].split("/")
+        rows.append({"owner": owner, "repo": repo, "number": i["number"], "title": i["title"], "state": i["state"].lower(), "updated": i["updatedAt"], "last_actor": None, "url": i["url"]})
+    return rows
+
 def gh_items(cfg, fixture):
-    """Return {(owner, repo, number): {state, updated, last_actor, title, url}} from a fixture or GitHub."""
+    """Return (issues {(owner, repo, n): item}, prs_review [items], prs_mine [items]) from a fixture or GitHub."""
     if fixture:
         data = json.loads(Path(fixture).read_text())
-        return {(i["owner"], i["repo"], int(i["number"])): i for i in data["items"]}
+        return {(i["owner"], i["repo"], int(i["number"])): i for i in data["items"]}, data.get("prs_review", []), data.get("prs_mine", [])
     gh = cfg.get("github", {}); user = gh.get("user"); org = gh.get("org")
     if not (user and org): die("cairn.toml needs [github] org and user for a live sweep (or use --fixture)")
-    out = subprocess.run(["gh", "search", "issues", "--owner", org, "--assignee", user, "--state", "open", "--json", "repository,number,title,state,updatedAt,url", "--limit", "200"], capture_output=True, text=True)
-    if out.returncode != 0: die("gh search failed: " + out.stderr.strip()[:200])
-    items = {}
-    for i in json.loads(out.stdout):
-        repo = i["repository"]["nameWithOwner"].split("/")
-        items[(repo[0], repo[1], int(i["number"]))] = {"owner": repo[0], "repo": repo[1], "number": i["number"], "title": i["title"],
-                                                        "state": i["state"].lower(), "updated": i["updatedAt"], "last_actor": None, "url": i["url"]}
-    return items
+    issues = {(i["owner"], i["repo"], int(i["number"])): i for i in _gh_search("issues", "--owner", org, "--assignee", user, "--state", "open")}
+    prs_review = _gh_search("prs", "--owner", org, "--review-requested", user, "--state", "open")
+    prs_mine = _gh_search("prs", "--owner", org, "--author", user, "--state", "open")
+    return issues, prs_review, prs_mine
 
 def cmd_sweep(bundle, cfg, a):
     fixture = a[a.index("--fixture") + 1] if "--fixture" in a else None
     create = "--create" in a
-    items = gh_items(cfg, fixture)
+    items, prs_review, prs_mine = gh_items(cfg, fixture)
     work = nodes(bundle, "type: work"); seen = set(); changed = []
     for n in work:
         f = fm(n); m = ISSUE_URL.search(str(f.get("resource", "")))
@@ -195,6 +201,15 @@ def cmd_sweep(bundle, cfg, a):
                     f"generated: {{ by: \"crn/sweep\", at: \"{NOW.isoformat(timespec='seconds')}\" }}\nupdated: {TODAY}\n---\n# {it['title']}\n\n"
                     f"## Now\n\nCreated by `crn sweep` on {TODAY}; state not yet written.\n\n## Next\n\n1. Triage.\n\n## Decisions\n\n## Artifacts\n\n## Log\n\n- {TODAY} created by sweep\n")
             iwe(bundle, "create", k, "-c", "-", inp=body); print(f"          created {k}")
+    noded = {str(fm(n).get("resource", "")).rstrip("/") for n in work}
+    if prs_review:
+        print(f"review requested from you ({len(prs_review)}):")
+        for p in sorted(prs_review, key=lambda p: p["updated"], reverse=True): print(f"  {p['owner']}/{p['repo']}#{p['number']} {p['title'][:70]} · {str(p['updated'])[:10]}")
+    if prs_mine:
+        print(f"your open PRs ({len(prs_mine)}):")
+        for p in sorted(prs_mine, key=lambda p: p["updated"], reverse=True):
+            tag = " · has node" if p["url"].rstrip("/") in noded else ""
+            print(f"  {p['owner']}/{p['repo']}#{p['number']} {p['title'][:70]} · {str(p['updated'])[:10]}{tag}")
     return 0
 
 def cmd_trail(bundle, cfg, a):
