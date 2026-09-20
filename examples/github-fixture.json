@@ -8,7 +8,7 @@
       "title": "Peer the dev database cluster to the ops network",
       "state": "open",
       "updated": "2026-09-18T07:25:00Z",
-      "last_actor": "sam",
+      "last_actor": "cato",
       "url": "https://github.com/acme/platform/issues/431"
     },
     {
@@ -38,7 +38,7 @@
       "title": "Remove the retired event exporter",
       "state": "open",
       "updated": "2026-09-12T10:00:00Z",
-      "last_actor": "sam",
+      "last_actor": "cato",
       "url": "https://github.com/acme/manifests/issues/894"
     },
     {

@@ -23,5 +23,9 @@ sections:
       - header: { const: Runbooks }
         minContains: 0
         maxContains: 1
+      - header: { const: Context }
+        minContains: 0
+        maxContains: 1
+        description: "- finding in one sentence → path or URL of a file outside the bundle; read only on doubt"
     additionalSections: false
 additionalSections: false

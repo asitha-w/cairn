@@ -9,7 +9,7 @@ env:
 systems:
 - database
 people:
-- sam
+- cato
 blocked_by: []
 gh_state: open
 gh_updated: 2026-09-17T15:00:00Z
@@ -19,7 +19,7 @@ updated: 2026-09-19
 
 # Compact the telemetry collection to reclaim freed space
 
-Systems: [Database cluster](../systems/database.md) · waits on [Sam](../people/sam.md)
+Systems: [Database cluster](../systems/database.md) · waits on [Cato](../people/cato.md)
 
 ## Now
 
@@ -35,10 +35,9 @@ Systems: [Database cluster](../systems/database.md) · waits on [Sam](../people/
 
 - 2026-09-12 no replay of the three unreadable buckets; filed separately
 
-## Artifacts
+## Context
 
-- [compact runbook](../artifacts/platform-419/compact-runbook.md)
-- [free-storage ask sheet](../artifacts/platform-419/collstats-request.md)
+- free-storage ask sheet: the collStats figures requested from the vendor → ../../files/platform-419/collstats-request.md
 
 ## Log
 

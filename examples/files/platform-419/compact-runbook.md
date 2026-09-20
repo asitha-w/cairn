@@ -1,5 +1,5 @@
 ---
-type: artifact
+type: file
 title: "Compact runbook"
 ---
 # Compact runbook

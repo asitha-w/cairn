@@ -1,6 +1,6 @@
 """graph.py — crn graph: export the bundle as a graph with its dimensions, and a single-file local viewer.
 
-Nodes: every work, system and person node with type, repo (from the resource URL), stage, priority, env, systems,
+Nodes: every work, system and person node (plus you, from cairn.toml github.user) with type, repo (from the resource URL), stage, priority, env, systems,
 people, updated, log lines, state. Edges: frontmatter lists (systems, people, blocked_by) plus markdown links in the body
 to other nodes. Formats: json, gexf (Gephi / Gephi Lite), html (self-contained viewer, opens from file://).
 Writes under <bundle>/.cairn/ by default. Nothing leaves the machine.
@@ -23,18 +23,17 @@ def build(bundle, cfg, include_done=False):
     today = _date.today()
     for n in allnodes:
         k = key_of(n); f = fm(n); t = f.get("type")
-        if t not in ("work", "system", "person", "record"): continue
+        if t not in ("work", "system", "person"): continue
         if t == "work" and f.get("stage") == "done" and not include_done: continue
         body = iwe(bundle, "retrieve", "-k", k, check=False)
         m = ISSUE_URL.search(str(f.get("resource", "")))
         repo = f"{m.group(1)}/{m.group(2)}" if m else ("local" if t == "work" else None)
-        kind = f.get("kind") if t == "record" else None
         logs = sum(1 for ln in body.splitlines() if ln.startswith("- ") and "session" in ln)
         out_nodes.append({"id": k, "type": t, "title": n.get("title") or k.split("/")[-1], "repo": repo, "stage": f.get("stage"),
                           "priority": f.get("priority"), "priority_label": lg.get(f.get("priority")), "env": f.get("env") or [],
                           "systems": f.get("systems") or [], "people": f.get("people") or [], "updated": str(f.get("updated") or "")[:10],
                           "gh_updated": str(f.get("gh_updated") or "")[:10], "state": f.get("state") or f.get("access") or "", "logs": logs,
-                          "resource": f.get("resource"), "blocked_by": f.get("blocked_by") or [], "kind": kind, "date": str(f.get("date") or "")[:10],
+                          "resource": f.get("resource"), "blocked_by": f.get("blocked_by") or [],
                           "unblocked": bool(f.get("blocked_by")) and all(stage_of.get(b) == "done" for b in f.get("blocked_by") or []),
                           "gh_moved": bool(f.get("gh_updated")) and str(f.get("gh_updated"))[:10] > str(f.get("updated") or "")[:10],
                           "age": (today - _date.fromisoformat(str(f.get("updated"))[:10])).days if f.get("updated") else None})
@@ -46,7 +45,7 @@ def build(bundle, cfg, include_done=False):
         for w in f.get("work") or []: edge(k, w, "informs")
         for l in LINK.findall(body):
             tgt = posixpath.normpath(l.lstrip("/")) if l.startswith("/") else posixpath.normpath(posixpath.join(posixpath.dirname(k), l))
-            if tgt.startswith(".."): continue            # a link outside the bundle (an artifact) is not a graph edge
+            if tgt.startswith(".."): continue            # a link outside the bundle (a lazy file) is not a graph edge
             tk = tgt[:-3] if tgt.endswith(".md") else tgt
             if tk in keys and tk != k: edge(k, tk, "links")
     # pull requests from the last sweep, if any: to review, and yours
@@ -77,8 +76,20 @@ def build(bundle, cfg, include_done=False):
                 out_nodes.append({"id": pid, "type": "pr", "role": role, "title": f"PR #{p['number']} {p['title']}", "repo": f"{p['owner']}/{p['repo']}",
                                   "updated": str(p.get("updated", ""))[:10], "url": p["url"], "state": None, "logs": 0, "env": [], "systems": [], "people": []})
                 for wk, rel in pr_targets(p): edges.append({"s": pid, "t": wk, "rel": rel})
+    # you: a person node (the real people/<user>.md if it exists), with what needs you hanging off it
+    me = (cfg.get("github") or {}).get("user") or "me"; me_id = f"people/{me}"
+    mine = next((n for n in out_nodes if n["id"] == me_id), None)
+    if mine is None:
+        mine = {"id": me_id, "type": "person", "title": f"you ({me})", "repo": None, "stage": None, "priority": None, "priority_label": None, "env": [],
+                "systems": [], "people": [], "updated": "", "gh_updated": "", "state": "", "logs": 0, "resource": None, "blocked_by": [], "unblocked": False, "gh_moved": False, "age": None}
+        out_nodes.append(mine)
+    mine["me"] = True
+    mine["state"] = mine.get("state") or "PRs waiting for your review, your open PRs, and work where GitHub moved after your last update"
+    for n in out_nodes:
+        if n["type"] == "pr": edges.append({"s": n["id"], "t": me_id, "rel": "review" if n["role"] == "review" else "yours"})
+        elif n["type"] == "work" and n.get("gh_moved") and n.get("stage") != "done": edges.append({"s": n["id"], "t": me_id, "rel": "needs_you"})
     ids = {n["id"] for n in out_nodes}
-    RANK = {"blocked_by": 0, "waits_on": 1, "is": 2, "for": 2, "informs": 2, "about": 3, "links": 4}
+    RANK = {"blocked_by": 0, "waits_on": 1, "review": 1, "needs_you": 1, "is": 2, "for": 2, "yours": 2, "informs": 2, "about": 3, "links": 4}
     merged = {}
     for e in edges:
         if e["s"] not in ids or e["t"] not in ids: continue
@@ -87,9 +98,9 @@ def build(bundle, cfg, include_done=False):
     edges = []
     for m in merged.values():
         m["rels"].sort(key=lambda r: RANK.get(r, 9)); m["rel"] = m["rels"][0]; edges.append(m)
-    return {"nodes": out_nodes, "edges": edges, "legend": lg, "generated_at": __import__("datetime").datetime.now().isoformat(timespec="minutes"), "swept_at": swept_at,
+    return {"nodes": out_nodes, "edges": edges, "legend": lg, "me": me_id, "generated_at": __import__("datetime").datetime.now().isoformat(timespec="minutes"), "swept_at": swept_at,
             "counts": {"work": sum(n["type"] == "work" for n in out_nodes), "systems": sum(n["type"] == "system" for n in out_nodes),
-                       "people": sum(n["type"] == "person" for n in out_nodes), "records": sum(n["type"] == "record" for n in out_nodes), "prs": sum(n["type"] == "pr" for n in out_nodes), "edges": len(edges)}}
+                       "people": sum(n["type"] == "person" for n in out_nodes), "prs": sum(n["type"] == "pr" for n in out_nodes), "edges": len(edges)}}
 
 
 def gexf(g):
@@ -119,7 +130,7 @@ def graph(bundle, cfg, fmt="html", out=None, include_done=False, open_browser=Fa
     p = Path(out) if out else outdir / name
     p.write_text(text)
     c = g["counts"]
-    print(f"graph: {c['work']} work · {c['systems']} systems · {c['people']} people · {c['records']} records · {c['prs']} PRs · {c['edges']} edges → {p}")
+    print(f"graph: {c['work']} work · {c['systems']} systems · {c['people']} people · {c['prs']} PRs · {c['edges']} edges → {p}")
     if fmt == "html": print(f"open: file://{p.resolve()}")
     if open_browser:
         import webbrowser; webbrowser.open(f"file://{p.resolve()}")

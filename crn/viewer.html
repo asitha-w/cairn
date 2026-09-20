@@ -7,7 +7,7 @@
 <style>
   :root { --bg:#0f1115; --fg:#e6e6e6; --muted:#8b93a7; --panel:#171a21; --line:#2a2f3a; --accent:#7aa2f7;
           --p1:#f7768e; --p2:#ff9e64; --p3:#e0af68; --p4:#9ece6a; --none:#565f89; --sys:#7dcfff; --person:#bb9af7;
-          --review:#73daca; --mine:#c0caf5; --record:#e0af68; --active:#9ece6a; --blocked:#f7768e; --parked:#e0af68; --done:#565f89; }
+          --review:#73daca; --mine:#c0caf5; --active:#9ece6a; --blocked:#f7768e; --parked:#e0af68; --done:#565f89; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px/1.4 system-ui, sans-serif; }
   #wrap { display:flex; height:100%; }
   #cw { flex:1; min-width:0; position:relative; }
@@ -15,6 +15,7 @@
   #side { width:300px; border-left:1px solid var(--line); background:var(--panel); padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:14px; }
   #side h1 { margin:0; font-size:15px; display:flex; justify-content:space-between; align-items:baseline; }
   #side h1 small { color:var(--muted); font-weight:normal; font-size:12px; }
+  .row { display:flex; gap:6px; } button.mini { padding:2px 10px; font-size:11px; color:var(--muted); }
   fieldset { border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin:0; display:flex; flex-direction:column; gap:6px; }
   legend { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; padding:0 4px; }
   label { color:var(--muted); display:flex; gap:6px; align-items:center; justify-content:space-between; }
@@ -61,21 +62,21 @@
     <h1>Cairn <small id="stats"></small></h1>
     <fieldset><legend>view</legend>
       <label>mode <select id="mode"><option value="graph">graph</option><option value="list">list</option><option value="start">what to start now</option></select></label>
-      <label>group by <select id="group"><option value="none">nothing</option><option value="repo">repo</option><option value="system">system</option><option value="stage">stage</option><option value="priority">priority</option></select></label>
+      <label>group by <select id="group"><option value="none">nothing</option><option value="repo">repo</option><option value="system">system</option><option value="stage">stage</option><option value="priority">priority</option><option value="people">people</option></select></label>
       <label>colour by <select id="colour"><option value="priority">priority</option><option value="stage">stage</option><option value="repo">repo</option><option value="type">type</option></select></label>
       <label>size by <select id="size"><option value="logs">activity</option><option value="links">links</option><option value="none">same</option></select></label>
       <input type="search" id="q" placeholder="find… title, state, key">
     </fieldset>
     <fieldset><legend>show</legend>
+      <div class="row"><button type="button" class="mini" id="showall">all</button><button type="button" class="mini" id="shownone">none</button></div>
       <div id="stages"></div>
       <label class="chk"><input type="checkbox" id="showsys" checked> systems</label>
       <label class="chk"><input type="checkbox" id="showpeople" checked> people</label>
-      <label class="chk"><input type="checkbox" id="showrecords"> records everywhere <span class="hint" id="reccount"></span></label>
       <label class="chk"><input type="checkbox" id="showprs" checked> pull requests <span class="hint" id="prcount"></span></label>
       <label class="chk"><input type="checkbox" id="focus" checked> focus on selection</label>
     </fieldset>
     <fieldset><legend>legend</legend><div id="legend"></div></fieldset>
-    <div class="hint">Click a node for its card and to focus on its neighbours; records (investigations, research, runbooks) appear there. Click empty space to clear. Drag to move, wheel to zoom, double-click to re-fit.</div>
+    <div class="hint">Click a node for its card and to focus on its neighbours. Click empty space to clear. Drag to move, wheel to zoom, double-click to re-fit.</div>
     <div class="hint" id="stamp"></div>
   </div>
 </div>
@@ -92,7 +93,6 @@ G.edges.forEach(e => { byId[e.s].links++; byId[e.t].links++; });
 const nb = {}; G.edges.forEach(e => { (nb[e.s] = nb[e.s] || new Set()).add(e.t); (nb[e.t] = nb[e.t] || new Set()).add(e.s); });
 const stages = [...new Set(G.nodes.filter(n => n.stage).map(n => n.stage))];
 stages.forEach(s => { const l = document.createElement('label'); l.className = 'chk'; l.innerHTML = `<input type="checkbox" data-stage="${s}" ${s === 'done' ? '' : 'checked'}> ${s}`; $('stages').appendChild(l); });
-const recs = G.nodes.filter(n => n.type === 'record'); $('reccount').textContent = recs.length ? `(${recs.length}; shown around a selected node)` : '';
 const prs = G.nodes.filter(n => n.type === 'pr'); $('prcount').textContent = prs.length ? `(${prs.filter(p => p.role === 'review').length} to review · ${prs.filter(p => p.role === 'mine').length} mine)` : '(run crn sweep)';
 $('stamp').textContent = (G.generated_at ? `generated ${G.generated_at}` : '') + (G.swept_at ? ` · sweep ${G.swept_at.slice(0, 16)}` : '');
 
@@ -100,7 +100,6 @@ function visible(n) {
   if (n.type === 'system' && !$('showsys').checked) return false;
   if (n.type === 'person' && !$('showpeople').checked) return false;
   if (n.type === 'pr' && !$('showprs').checked) return false;
-  if (n.type === 'record' && !$('showrecords').checked && !(selected && $('focus').checked && (nb[selected.id] || new Set()).has(n.id)) && n !== selected) return false;
   if (n.type === 'work') { const c = $('stages').querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
   const q = $('q').value.trim().toLowerCase();
   if (q && !(n.title + ' ' + (n.state || '') + ' ' + n.id).toLowerCase().includes(q)) return false;
@@ -109,26 +108,27 @@ function visible(n) {
 }
 function groupKey(n) {
   const g = $('group').value;
-  if (g === 'repo') return n.repo || (n.type === 'system' ? 'systems' : n.type === 'person' ? 'people' : n.type === 'record' ? 'records' : 'other');
+  if (g === 'repo') return n.repo || (n.type === 'system' ? 'systems' : n.type === 'person' ? 'people' : 'other');
   if (g === 'system') return n.type === 'system' ? n.id : (n.systems && n.systems[0] ? 'systems/' + n.systems[0] : n.type === 'work' ? 'no system' : n.type);
   if (g === 'stage') return n.stage || n.type;
-  if (g === 'priority') return n.priority ? 'P' + n.priority : (n.type === 'work' ? 'unset' : n.type);
+  if (g === 'priority') return n.priority ? (n.priority_label || 'P' + n.priority) : (n.type === 'work' ? 'no priority' : n.type);
+  if (g === 'people') return n.type === 'person' ? n.id : n.type === 'pr' ? G.me : n.type === 'work' ? (n.people && n.people[0] ? 'people/' + n.people[0] : (n.gh_moved && n.stage !== 'done' ? G.me : 'no one waiting')) : 'systems';
   return null;
 }
-const hub = g => ['systems', 'people', 'records', 'system', 'person', 'record', 'pr', 'other'].includes(g);
+const hub = g => ['systems', 'people', 'system', 'person', 'pr', 'other'].includes(g);
+const gname = g => g === G.me ? 'you' : g.replace(/^(systems|people)\//, '');
 const colourCache = {};
 function colour(n) {
   const c = $('colour').value;
   if (n.type === 'system') return css('--sys'); if (n.type === 'person') return css('--person');
   if (n.type === 'pr') return n.role === 'review' ? css('--review') : css('--mine');
-  if (n.type === 'record') return css('--record');
   if (c === 'priority') return n.priority ? css('--p' + Math.min(n.priority, 4)) : css('--none');
   if (c === 'stage') return css('--' + (n.stage || 'none'));
   if (c === 'type') return css('--accent');
   const k = n.repo || 'local'; if (!(k in colourCache)) colourCache[k] = PAL[Object.keys(colourCache).length % PAL.length]; return colourCache[k];
 }
 function radius(n) {
-  const s = $('size').value; const base = n.type === 'work' ? 6 : n.type === 'pr' ? 4 : n.type === 'record' ? 4 : 5;
+  const s = $('size').value; const base = n.type === 'work' ? 6 : n.type === 'pr' ? 4 : 5;
   if (s === 'logs') return base + Math.min(n.logs || 0, 20) * 0.6; if (s === 'links') return base + Math.min(n.links, 20) * 0.7; return base;
 }
 function legend() {
@@ -138,7 +138,7 @@ function legend() {
   else if (c === 'stage') ['active', 'blocked', 'parked', 'done'].forEach(s => item(css('--' + s), s));
   else if (c === 'repo') Object.entries(colourCache).forEach(([k, v]) => item(v, k));
   else item(css('--accent'), 'work');
-  item(css('--sys'), 'system'); item(css('--person'), 'person'); if (recs.length) item(css('--record'), 'record (investigation, research, runbook)');
+  item(css('--sys'), 'system'); item(css('--person'), 'person (ring: you)');
   if (prs.length) { item(css('--review'), 'PR requesting your review'); item(css('--mine'), 'your open PR'); }
   el.insertAdjacentHTML('beforeend', `<span><i class="line" style="background:${css('--blocked')}"></i>blocked by</span><span><i class="line" style="background:${css('--person')}"></i>waits on</span><span><i class="line" style="background:rgba(139,147,167,0.6)"></i>about / links</span>`);
 }
@@ -177,21 +177,21 @@ function draw() {
     const rr = Math.max(40, ...mem.map(n => Math.hypot(n.x - cx, n.y - cy) + radius(n) + 18));
     ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fillStyle = 'rgba(122,162,247,0.035)'; ctx.fill(); ctx.strokeStyle = 'rgba(122,162,247,0.2)'; ctx.lineWidth = 1 / scale; ctx.stroke();
     const many = Object.keys(centers).length > 8;
-    ctx.font = `bold ${(many ? 12 : 18) / scale}px system-ui`; ctx.fillStyle = css('--fg'); ctx.textAlign = 'center'; ctx.fillText(`${g.replace(/^systems\//, '')} · ${mem.length}`, cx, cy - rr - 8 / scale); ctx.textAlign = 'left';
+    ctx.font = `bold ${(many ? 12 : 18) / scale}px system-ui`; ctx.fillStyle = css('--fg'); ctx.textAlign = 'center'; ctx.fillText(`${gname(g)} · ${mem.length}`, cx, cy - rr - 8 / scale); ctx.textAlign = 'left';
   }
   for (const e of G.edges) { const a = byId[e.s], b = byId[e.t]; if (!visible(a) || !visible(b)) continue;
     const hot = selected && (a === selected || b === selected);
     const dim = G.edges.length > 250 ? 0.14 : 0.3;
-    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : e.rel === 'waits_on' ? css('--person') : `rgba(139,147,167,${dim})`; ctx.lineWidth = (hot ? 2 : 1) / scale;
+    ctx.strokeStyle = hot ? css('--accent') : e.rel === 'blocked_by' ? css('--blocked') : e.rel === 'waits_on' ? css('--person') : e.rel === 'review' ? css('--review') : e.rel === 'yours' ? css('--mine') : e.rel === 'needs_you' ? css('--accent') : `rgba(139,147,167,${dim})`; ctx.lineWidth = (hot ? 2 : 1) / scale;
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
   const q = $('q').value.trim(), focused = selected && $('focus').checked;
   for (const n of vis) { const r = radius(n); ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fillStyle = colour(n); ctx.fill();
     if (n.type === 'pr') { ctx.strokeStyle = colour(n); ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.rect(n.x - r, n.y - r, 2 * r, 2 * r); ctx.stroke(); }
-    if (n.type === 'record') { ctx.strokeStyle = colour(n); ctx.lineWidth = 1.5 / scale; ctx.beginPath(); ctx.moveTo(n.x, n.y - r - 3 / scale); ctx.lineTo(n.x + r + 3 / scale, n.y); ctx.lineTo(n.x, n.y + r + 3 / scale); ctx.lineTo(n.x - r - 3 / scale, n.y); ctx.closePath(); ctx.stroke(); }
+    if (n.me) { ctx.strokeStyle = css('--person'); ctx.lineWidth = 2 / scale; ctx.beginPath(); ctx.arc(n.x, n.y, r + 4 / scale, 0, Math.PI * 2); ctx.stroke(); }
     if (n === selected) { ctx.beginPath(); ctx.arc(n.x, n.y, r + 6 / scale, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 3 / scale; ctx.stroke(); }
     if (n === selected || n === hover) { ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / scale; ctx.stroke(); }
     const isNb = focused && n !== selected;
-    if (n.type === 'system' || n.type === 'person' || scale > 1.7 || n === selected || n === hover || q || focused) {
+    if (n.type === 'system' || n.type === 'person' || n.me || scale > 1.7 || n === selected || n === hover || q || focused) {
       const bold = n === selected || isNb;
       ctx.fillStyle = n.type === 'work' || n.type === 'pr' || bold ? css('--fg') : css('--muted');
       ctx.font = `${bold ? 'bold ' : ''}${((n.type === 'work' ? 11 : 10) + (n === selected ? 2 : 0)) / scale}px system-ui`;
@@ -199,13 +199,13 @@ function draw() {
       ctx.fillText(n.title.length > maxLen ? n.title.slice(0, maxLen - 1) + '…' : n.title, n.x + r + 3, n.y + 4 / scale);
       if (isNb && vis.length <= 22) {   // one line of context under a neighbour, when there is room for it
         const rel = relations(selected)[n.id]; const relTxt = rel ? [...rel].join(', ') : '';
-        const ctxTxt = n.type === 'work' ? (n.state || '') : n.type === 'system' ? (n.state || '') : n.type === 'record' ? ((n.kind || 'record') + ' ' + (n.date || '') + ' · ' + (n.state || '')) : n.type === 'pr' ? (n.role === 'review' ? 'requests your review' : 'your open PR') + ' · ' + n.updated : '';
+        const ctxTxt = n.type === 'work' ? (n.state || '') : n.type === 'system' ? (n.state || '') : n.type === 'pr' ? (n.role === 'review' ? 'requests your review' : 'your open PR') + ' · ' + n.updated : '';
         const line2 = [relTxt, n.type === 'work' && n.stage ? n.stage + (n.priority ? ' P' + n.priority : '') : '', ctxTxt].filter(Boolean).join(' · ');
         ctx.fillStyle = css('--muted'); ctx.font = `${9.5 / scale}px system-ui`;
         ctx.fillText(line2.length > 90 ? line2.slice(0, 89) + '…' : line2, n.x + r + 3, n.y + 16 / scale);
       }
     } }
-  $('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'record').length} records · ${vis.filter(n => n.type === 'pr').length} PRs`;
+  $('stats').textContent = `${vis.filter(n => n.type === 'work').length} work · ${vis.filter(n => n.type === 'system').length} systems · ${vis.filter(n => n.type === 'pr').length} PRs`;
 }
 function fit() { const vis = G.nodes.filter(visible); if (!vis.length) return;
   const xs = vis.map(n => n.x), ys = vis.map(n => n.y), minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
@@ -219,7 +219,7 @@ function pick(mx, my) { const x = (mx - W / 2 - tx) / scale, y = (my - H / 2 - t
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function relations(n) { const rel = {}; G.edges.filter(e => e.s === n.id || e.t === n.id).forEach(e => { const o = e.s === n.id ? e.t : e.s; (rel[o] = rel[o] || new Set()); (e.rels || [e.rel]).forEach(r => rel[o].add(e.s === n.id ? r : r + ' (in)')); });
   for (const o in rel) { const s = rel[o]; [...s].forEach(r => { if (r.endsWith(' (in)') && s.has(r.slice(0, -5))) s.delete(r); }); } return rel; }
-function clip(n) { return n.type === 'work' ? `crn open ${n.id.split('/')[1]}` : n.type === 'pr' ? `gh pr view ${n.url}` : `crn open ${n.id}`; }
+function clip(n) { return n.me ? 'crn pending' : n.type === 'work' ? `crn open ${n.id.split('/')[1]}` : n.type === 'pr' ? `gh pr view ${n.url}` : `crn open ${n.id}`; }
 // ---- ranking for "what to start now": transparent rules, every point has a reason
 function rank(n) {
   const why = []; let s = 0;
@@ -245,7 +245,6 @@ function renderList(mode) {
 }
 function visibleBase(n) {   // the show toggles and search, without the focus filter
   if (n.type === 'pr' && !$('showprs').checked) return false;
-  if (n.type === 'record' && !$('showrecords').checked && !(selected && $('focus').checked && (nb[selected.id] || new Set()).has(n.id)) && n !== selected) return false;
   if (n.type === 'work') { const c = $('stages').querySelector(`[data-stage="${n.stage}"]`); if (c && !c.checked) return false; }
   const q = $('q').value.trim().toLowerCase();
   return !(q && !(n.title + ' ' + (n.state || '') + ' ' + n.id).toLowerCase().includes(q));
@@ -257,7 +256,6 @@ function show(n) {
   const rel = relations(n);
   const linked = Object.entries(rel).map(([o, rs]) => `<li><a href="#" data-id="${esc(o)}">${esc(byId[o].title)}</a> <span class="k">${esc([...rs].join(', '))}</span></li>`).join('');
   card.innerHTML = `<span class="x" title="close">✕</span><h2>${esc(n.title)}</h2><div class="k"><code>${esc(n.id)}</code>${n.repo ? ' · ' + esc(n.repo) : ''}${n.type === 'pr' ? ' · ' + (n.role === 'review' ? 'requests your review' : 'your open PR') + ' · ' + esc(n.updated) : ''}</div>` +
-    (n.type === 'record' ? `<div class="k">${esc(n.kind || 'record')} · ${esc(n.date || '')}</div>` : '') +
     (n.type === 'work' ? `<div class="k">${esc(n.stage)}${n.priority ? ' · P' + n.priority + ' ' + esc(n.priority_label || '') : ''} · updated ${esc(n.updated)}${n.gh_updated ? ' · gh ' + esc(n.gh_updated) : ''} · ${n.logs} sessions</div>` : '') +
     (n.state ? `<div class="state">${esc(n.state)}</div>` : '') + (n.env && n.env.length ? `<div class="k">env ${esc(n.env.join(', '))}</div>` : '') +
     (n.resource ? `<div class="k"><a href="${esc(n.resource)}" target="_blank">${esc(n.resource)}</a></div>` : n.url ? `<div class="k"><a href="${esc(n.url)}" target="_blank">${esc(n.url)}</a></div>` : '') +
@@ -275,7 +273,11 @@ cv.addEventListener('mousemove', e => { if (drag && drag.pan) { drag.moved = tru
 cv.addEventListener('mouseup', e => { if (drag && !drag.pan) show(drag); else if (drag && drag.pan && !drag.moved) show(null); drag = null; });
 cv.addEventListener('dblclick', e => { if (!pick(e.offsetX, e.offsetY)) { touched = false; ticks = 0; } });
 cv.addEventListener('wheel', e => { e.preventDefault(); touched = true; scale = Math.max(0.2, Math.min(4, scale * (e.deltaY < 0 ? 1.1 : 0.9))); }, { passive: false });
-document.querySelectorAll('#side select, #side input').forEach(el => el.addEventListener('input', () => { Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); touched = false; ticks = 0; applyMode(); }));
+function refresh() { Object.keys(colourCache).forEach(k => delete colourCache[k]); legend(); touched = false; ticks = 0; applyMode(); }
+document.querySelectorAll('#side select, #side input').forEach(el => el.addEventListener('input', refresh));
+const showBoxes = () => [...document.querySelectorAll('#side fieldset:nth-of-type(2) input[type=checkbox]')].filter(c => c.id !== 'focus');
+$('showall').onclick = () => { showBoxes().forEach(c => c.checked = true); refresh(); };
+$('shownone').onclick = () => { showBoxes().forEach(c => c.checked = false); refresh(); };
 window.addEventListener('resize', resize); resize(); legend(); loop();
 </script>
 </body>
