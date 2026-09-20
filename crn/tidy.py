@@ -11,8 +11,8 @@ from .bundle import nodes, fm, key_of, out, TODAY
 
 DEFAULTS = {"max_tokens": 1000, "max_log": 15, "quiet_active_days": 30, "parked_days": 90, "untriaged_days": 14, "placeholders": []}
 ADVICE = {
-    "oversized":   "over the token budget: split the work into two nodes, or roll old Log lines into a file and leave one Context line",
-    "long_log":    "Log past the line budget: roll the older lines into a file under the work folder, keep the last few",
+    "oversized":   "over the token budget: crn roll <node> for the Log, rewrite Now as one dated paragraph, or split the work",
+    "long_log":    "Log past its budget (five for active and blocked, one for parked and done): crn roll <node>",
     "dangling":    "Context or Runbooks line whose file is missing: fix the path or drop the line",
     "placeholder": "Context line without a real finding: write the sentence, or drop the line",
     "no_systems":  "work node with no system: add the systems it touches",
@@ -50,7 +50,8 @@ def tidy(bundle, cfg, as_json=False, show_all=False):
         toks = len(body) // 4
         logs = _section(body, "Log")
         if toks > t["max_tokens"]: F["oversized"].append((k, f"~{toks} tokens · {len(logs)} Log lines"))
-        if len(logs) > t["max_log"]: F["long_log"].append((k, f"{len(logs)} Log lines"))
+        log_limit = 1 if f.get("stage") in ("parked", "done") else t["max_log"]
+        if len(logs) > log_limit: F["long_log"].append((k, f"{len(logs)} Log lines · {f.get('stage')} keeps {log_limit}"))
         for l in _section(body, "Context"):
             if " → " not in l: F["placeholder"].append((k, l[2:60])); continue
             sent, path = l[2:].rsplit(" → ", 1)

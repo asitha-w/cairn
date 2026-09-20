@@ -74,6 +74,7 @@ never writes outside the bundle.
 | `crn log` / `decide` | append a dated line under Log or Decisions | the node |
 | `crn sweep [--create]` | refresh GitHub fields, list what is new, rebuild the viewer | `gh_*`, `.cairn/` |
 | `crn trail` | fold new transcripts into Log | Log only |
+| `crn roll <node>` | park the older Log lines in a file outside the bundle and leave one Context line; keeps five lines on active and blocked work, one on parked and done (when it was last touched). Runs by itself on `crn stage … parked\|done` | the node, one file |
 | `crn graph [--open]` | the local viewer; `--format json` or `gexf` for other tools | `.cairn/` only |
 | `crn tidy` | the weekly weed-out report, read-only: oversized nodes, long Logs, dangling or placeholder Context lines, untriaged stubs, stage vs GitHub, quiet work, orphan systems; each finding says what to do | no |
 | `crn validate` / `systems` / `init` / `doctor` | schema check; system counts; scaffold a bundle; check the wiring | no / no / a new bundle / no |
@@ -114,7 +115,7 @@ Step-by-step flow, the shape of a node and the code layout: [docs/how-it-works.m
 
 ## Status
 
-v0.4. Two layers; the CLI with per-verb help and `--json`; `init`, `doctor`, `priority`, `tidy`, `graph` with the
+v0.4. Two layers; the CLI with per-verb help and `--json`; `init`, `doctor`, `priority`, `tidy`, `roll`, `graph` with the
 viewer; three schemas; the example bundle; the Claude Code skill and command; the self-test. Not yet: a scheduled sweep, converters from other note formats.
 
 MIT.

@@ -8,10 +8,14 @@ user = "me"
 transcripts = "~/.claude/projects"   # where Claude Code writes session transcripts
 prefix = "-home-me-work-vanaheim"    # encoded project dir prefix; only transcripts under it are folded into ## Log
 
+[files]
+# Where crn roll parks a node's older Log lines: <dir>/<work slug>/log.md, relative to the bundle root, outside it.
+dir = "../files"
+
 [tidy]
 # Thresholds for `crn tidy`. All optional; these are the defaults.
 max_tokens = 1000          # a node past this is a candidate to split or to roll its Log into a file
-max_log = 15               # Log lines before rolling the older ones out
+max_log = 15               # Log lines an active or blocked node may hold; parked and done hold one
 quiet_active_days = 30     # active but not updated this long
 parked_days = 90           # parked this long: still worth keeping?
 untriaged_days = 14        # a sweep stub without a state sentence
