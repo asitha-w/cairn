@@ -35,10 +35,9 @@ Systems: [Database cluster](../systems/database.md) · waits on [Sam](../people/
 
 - 2026-09-12 no replay of the three unreadable buckets; filed separately
 
-## Artifacts
+## Context
 
-- [compact runbook](../artifacts/platform-419/compact-runbook.md)
-- [free-storage ask sheet](../artifacts/platform-419/collstats-request.md)
+- free-storage ask sheet: the collStats figures requested from the vendor → ../../files/platform-419/collstats-request.md
 
 ## Log
 

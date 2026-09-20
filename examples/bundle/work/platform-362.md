@@ -30,9 +30,9 @@ Waits on [Alex](../people/alex.md) for the purchase.
 
 - 2026-09-10 one-year term, not three; the exchange rules change on 2027-02-01
 
-## Artifacts
+## Context
 
-- [reservation plan](../artifacts/platform-362/plan.md)
+- reservation plan: one-year term, figures reconciled → ../../files/platform-362/plan.md
 
 ## Log
 

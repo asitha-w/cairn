@@ -42,7 +42,7 @@ def stub(it, prio=None):
     return (f"---\ntype: work\ntitle: {json.dumps(it['title'], ensure_ascii=False)}\nstate: \"new from sweep, not yet triaged\"\nstage: active\n{pr}"
             f"resource: {it['url']}\nenv: []\nsystems: []\npeople: []\nblocked_by: []\ngh_state: {it['state']}\ngh_updated: {json.dumps(it['updated'])}\n"
             f"generated: {{ by: \"crn/sweep\", at: \"{NOW.isoformat(timespec='seconds')}\" }}\nupdated: {TODAY}\n---\n# {it['title']}\n\n"
-            f"## Now\n\nCreated by `crn sweep` on {TODAY}; state not yet written.\n\n## Next\n\n1. Triage.\n\n## Decisions\n\n## Artifacts\n\n## Log\n\n- {TODAY} created by sweep\n")
+            f"## Now\n\nCreated by `crn sweep` on {TODAY}; state not yet written.\n\n## Next\n\n1. Triage.\n\n## Decisions\n\n## Context\n\n## Log\n\n- {TODAY} created by sweep\n")
 
 
 def sweep(bundle, cfg, fixture=None, create=False, as_json=False):

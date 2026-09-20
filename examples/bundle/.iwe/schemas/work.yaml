@@ -1,5 +1,5 @@
 $schema: https://document-schema.org/draft/2026-06/schema
-description: Cairn work node — one piece of work (an issue, a task, a thread). Hand-written fields are state, Now, Next, Decisions; producers own gh_* and Log.
+description: Cairn work node — one piece of work (an issue, a task, a thread). Hand-written fields are state, Now, Next, Decisions, Context; producers own gh_* and Log.
 frontmatter:
   type: object
   required: [type, title, state, stage]
@@ -37,9 +37,9 @@ sections:
       - header: { const: Decisions }
         maxContains: 1
         description: "- YYYY-MM-DD one line per decision"
-      - header: { const: Artifacts }
+      - header: { const: Context }
         maxContains: 1
-        description: "- [descriptive name](path or URL), one per line"
+        description: "- finding in one sentence → path or URL of a file outside the bundle; read only on doubt"
       - header: { const: Log }
         maxContains: 1
         description: "- YYYY-MM-DD one line; appended by crn log and crn trail"

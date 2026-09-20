@@ -37,9 +37,10 @@ Systems: [Database cluster](../systems/database.md) · [Network](../systems/netw
 
 - 2026-09-17 relocation, if any, happens before peering, because nothing is peered today
 
-## Artifacts
+## Context
 
-- [peering plan draft](../artifacts/platform-431/peering-plan-2026-09-16.md)
+- peering plan draft: subnets, NSGs and the order of operations → ../../files/platform-431/peering-plan-2026-09-16.md
+- egress breakdown 2026-09-10: eighty percent of the NAT bill is database traffic from the app network; peering would cut it to a tenth → ../../files/2026-09-10-egress.md
 
 ## Log
 

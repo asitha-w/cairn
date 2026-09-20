@@ -15,3 +15,7 @@ Managed document database, one cluster per environment. Storage does not shrink 
 - Egress from the app network to the database is billed twice: once by the cloud NAT, once by the vendor.
 - The metrics job needs the vendor scrape credential; without it the dashboard is empty, not red.
 
+## Runbooks
+
+- compact a collection node by node: secondaries first, primary last with force; verify free storage and replication lag after each pass → ../../files/platform-419/compact-runbook.md
+

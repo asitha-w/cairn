@@ -14,12 +14,17 @@ Cairn keeps the answer in a folder you own:
 ```
 my-graph/
   cairn.toml                 who you are: GitHub org and user, where transcripts live
-  work/platform-431.md       one piece of work: one-line state, Now, Next, Decisions, Artifacts, Log
-  systems/database.md        one thing you operate: how to reach it, where its config lives, gotchas
+  work/platform-431.md       one piece of work: one-line state, Now, Next, Decisions, Context, Log
+  systems/database.md        one thing you operate: how to reach it, where its config lives, gotchas, runbooks
   people/sam.md              someone work waits on
-  records/…                  pointers to findings that live elsewhere: an investigation, a research write-up, a runbook
-  artifacts/…                files a piece of work produced, named so you never need to open them
 ```
+
+Two layers. Layer one is the graph: work nodes and system nodes, linked. Layer two is context, and it
+hangs off a node in two forms: **inline** (the node body, always loaded with it) and **lazy** (one line
+in the body, a finding in one sentence and the path of a file that lives outside the bundle, read only
+when you or the agent are in doubt). Investigations, research write-ups, runbooks and plans stay where
+they are; the node carries the sentence. Nothing is loaded by accident: iwe never indexes what is
+outside the bundle, so the files never appear in search or in the graph.
 
 Every file is an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
 concept: YAML frontmatter plus markdown, linked with ordinary markdown links. Nothing is stored
@@ -49,7 +54,7 @@ anywhere else. No database is the truth, no model is called, nothing leaves the 
         crn open 431                ────────►     resolve 431 → work/devops-431 (key, issue number,
                                                   or slug prefix) · iwe retrieve · backlinks
                                     ◄────────     header · state · Now · Next · Decisions ·
-                                                  Artifacts · Log · linked from   (~700 tokens)
+                                                  Context · Log · linked from   (~700 tokens)
         gh issue view 431           ────────►     (GitHub, read-only: verify the dated claim)
         …work: kubectl, terraform, PRs…           never crn's business
 
@@ -82,9 +87,9 @@ folder into a queryable graph: full-text and fuzzy search, retrieval with linked
 validation, and guarded atomic edits. Your editor gets an LSP for the same files. Cairn does not
 reimplement any of that.
 
-Four node types: **work** (a piece of work), **system** (a thing you operate), **person**, and **record**
-(a pointer to a finding that lives in a file elsewhere, with the finding as its one-line state, so
-investigations, research and runbooks are searchable without moving them).
+Three node types: **work** (a piece of work), **system** (a thing you operate) and **person** (someone
+work waits on). Findings do not get nodes; they get one Context line on the node they belong to, and
+`crn find` matches that line because it searches node bodies.
 
 **`crn` does the work verbs.** A small Python package, standard library only (3.11+), that calls `iwe`
 and adds what a work graph needs. `crn --help` lists the verbs, `crn <verb> --help` explains one, every
@@ -102,7 +107,7 @@ read verb takes `--json`:
 | `crn trail` | fold new Claude Code transcripts into Log, one line per session per node | Log only |
 | `crn validate` | `iwe schema validate`; exit 1 on any violation | no |
 | `crn systems` | system nodes with how many work nodes point at them | no |
-| `crn graph [--open]` | a self-contained local viewer: group into sub-graphs by repo or system, colour by priority or stage, size by activity; click a node to focus on its neighbours and get a card whose "copy for Claude" button copies the one `crn open` line; a list mode and a "what to start now" mode rank work by transparent rules (review requests, priority, unblocked, GitHub moved after your update, untriaged, quiet) and show the reason per row; PRs from the last sweep appear as square nodes linked to the issues their titles name; records stay out of the overview and appear as diamonds around a selected node, so the graph stays readable while `crn find` sees everything; `--format json` or `gexf` for other tools | `.cairn/graph.*` only |
+| `crn graph [--open]` | a self-contained local viewer: group into sub-graphs by repo or system, colour by priority or stage, size by activity; click a node to focus on its neighbours and get a card whose "copy for Claude" button copies the one `crn open` line; a list mode and a "what to start now" mode rank work by transparent rules (review requests, priority, unblocked, GitHub moved after your update, untriaged, quiet) and show the reason per row; PRs from the last sweep appear as square nodes linked to the issues their titles name; `--format json` or `gexf` for other tools | `.cairn/graph.*` only |
 | `crn init <dir>` / `crn doctor` | scaffold a bundle and print the wiring steps / check python, iwe, gh, env, config, schemas, hook, skill | a new bundle / no |
 
 Two writers never touch the same field. You (or your agent, on your say-so) own `state`, `stage`,
@@ -139,8 +144,8 @@ One dated paragraph: what is true. The resume point.
 1. Numbered steps.
 ## Decisions
 - 2026-09-17 one line per decision
-## Artifacts
-- [peering plan draft](../artifacts/platform-431/peering-plan-2026-09-16.md)
+## Context
+- peering plan draft: subnets, NSGs and the order of operations → ../../files/platform-431/peering-plan-2026-09-16.md
 ## Log
 - 2026-09-16 session 8ae135c0: 43 calls · `terraform plan` on the test project
 ```
@@ -154,7 +159,7 @@ frontmatter lists are for filtering. Both name the same things.
 Everything is a CLI call, so no MCP server, no tool schemas loaded per session, and every call
 lands in the transcript where `crn trail` can see it.
 
-- `skills/cairn/SKILL.md` is a Claude Code skill: the five moves (find, open, work, record, sweep)
+- `skills/cairn/SKILL.md` is a Claude Code skill: the five moves (find, open, work, record a milestone, sweep)
   and the rules (verify dated claims at the source, never bulk-read the bundle, writes only inside it).
 - `commands/node.md` is a slash command that injects `crn open <node>` into the prompt before the
   model answers, so `/node 431` costs zero tool calls.
@@ -207,10 +212,10 @@ issues, and you write one system node per thing you operate.
 
 ## Status
 
-v0.3: the CLI as a package with per-verb help and `--json`; `init`, `doctor`, `priority`, `graph` with a
-local viewer; the three schemas; the example bundle; the skill and command; the self-test. Not yet:
-`docker compose`, a scheduled sweep, a `record` node type for investigations and research, converters
-from other note formats.
+v0.4: two layers (nodes, then inline or lazy context); the CLI as a package with per-verb help and
+`--json`; `init`, `doctor`, `priority`, `graph` with a local viewer; the three schemas; the example
+bundle; the skill and command; the self-test. Not yet: `crn tidy` (the periodic weed-out report),
+`docker compose`, a scheduled sweep, converters from other note formats.
 
 MIT.
 

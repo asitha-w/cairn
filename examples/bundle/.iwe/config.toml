@@ -191,5 +191,3 @@ match = "systems/**"
 [schemas.person]
 match = "people/**"
 
-[schemas.record]
-match = "records/**"

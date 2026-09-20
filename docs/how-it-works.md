@@ -65,7 +65,7 @@ $ crn open 431
 work/platform-431 · parked · updated 2026-09-18 · gh open 2026-09-18 last sam
 state: parked, waiting on Sam for the tier, the container CIDR and whether users are cluster-scoped
 env dev, ops · systems database, network · people sam · blocked_by work/platform-422
-… the node's Now, Next, Decisions, Artifacts, Log …
+… the node's Now, Next, Decisions, Context, Log …
 linked from (2): work/platform-422 · systems/network
 
 $ crn log 419 "compact pass A done on node 1"

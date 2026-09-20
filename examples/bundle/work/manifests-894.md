@@ -28,7 +28,7 @@ Systems: [Monitoring stack](../systems/monitoring.md) · reviewer [Sam](../peopl
 
 ## Decisions
 
-## Artifacts
+## Context
 
 ## Log
 

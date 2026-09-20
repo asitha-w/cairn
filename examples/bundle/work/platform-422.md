@@ -29,9 +29,9 @@ Systems: [Database cluster](../systems/database.md) · [Network](../systems/netw
 
 - 2026-09-15 peer over private endpoints rather than a VPN, cost
 
-## Artifacts
+## Context
 
-- [proof round log](../artifacts/platform-422/rounds.md)
+- proof round log: three rounds, all passed → ../../files/platform-422/rounds.md
 
 ## Log
 
