@@ -1,17 +1,16 @@
 """graph.py — crn graph: export the bundle as a graph with its dimensions, and a single-file local viewer.
 
 Nodes: every work, system and person node (plus you, from cairn.toml github.user) with type, repo (from the resource URL), stage, priority, env, systems,
-people, updated, log lines, state. Edges: frontmatter lists (systems, people, blocked_by) plus markdown links in the body
-to other nodes. Formats: json, gexf (Gephi / Gephi Lite), html (self-contained viewer, opens from file://).
+people, updated, log lines, state. Edges: frontmatter lists (systems, people, blocked_by) plus the body links IWE already
+resolved (its `references` and `includes` fields on every find result). One `iwe find` for the whole bundle; the only
+per-node work is a local file read for the Log-line count. Nodes and edges are sorted before serialisation, so the JSON
+does not depend on IWE's internal ordering. Formats: json, gexf (Gephi / Gephi Lite), html (self-contained viewer).
 Writes under <bundle>/.cairn/ by default. Nothing leaves the machine.
 """
-import json, re, html, posixpath
+import json, re, html
 from pathlib import Path
 from .bundle import iwe, nodes, fm, key_of, die, legend, HERE
 from .github import ISSUE_URL
-
-LINK = re.compile(r"\]\(([^)\s]+?\.md)\)")
-
 
 def build(bundle, cfg, include_done=False):
     allnodes = nodes(bundle)
@@ -25,7 +24,7 @@ def build(bundle, cfg, include_done=False):
         k = key_of(n); f = fm(n); t = f.get("type")
         if t not in ("work", "system", "person"): continue
         if t == "work" and f.get("stage") == "done" and not include_done: continue
-        body = iwe(bundle, "retrieve", "-k", k, check=False)
+        p = bundle / f"{k}.md"; body = p.read_text() if p.exists() else ""     # Cairn-specific: the Log-line count
         m = ISSUE_URL.search(str(f.get("resource", "")))
         repo = f"{m.group(1)}/{m.group(2)}" if m else ("local" if t == "work" else None)
         logs = sum(1 for ln in body.splitlines() if ln.startswith("- ") and "session" in ln)
@@ -43,10 +42,10 @@ def build(bundle, cfg, include_done=False):
         for p in f.get("people") or []: edge(k, f"people/{p}", "waits_on")
         for b in f.get("blocked_by") or []: edge(k, b, "blocked_by")
         for w in f.get("work") or []: edge(k, w, "informs")
-        for l in LINK.findall(body):
-            tgt = posixpath.normpath(l.lstrip("/")) if l.startswith("/") else posixpath.normpath(posixpath.join(posixpath.dirname(k), l))
-            if tgt.startswith(".."): continue            # a link outside the bundle (a lazy file) is not a graph edge
-            tk = tgt[:-3] if tgt.endswith(".md") else tgt
+        # body links, as IWE resolved them: a link in prose is a reference, a paragraph that is only a link is an inclusion.
+        # Links to files outside the bundle never appear in either, so lazy files are not graph edges.
+        for r in (n.get("references") or []) + (n.get("includes") or []):
+            tk = r.get("key") if isinstance(r, dict) else r
             if tk in keys and tk != k: edge(k, tk, "links")
     # pull requests from the last sweep, if any: to review, and yours
     sw = bundle / ".cairn" / "sweep.json"; swept_at = None
@@ -98,6 +97,7 @@ def build(bundle, cfg, include_done=False):
     edges = []
     for m in merged.values():
         m["rels"].sort(key=lambda r: RANK.get(r, 9)); m["rel"] = m["rels"][0]; edges.append(m)
+    out_nodes.sort(key=lambda n: n["id"]); edges.sort(key=lambda e: (e["s"], e["t"]))   # canonical order, independent of IWE's
     return {"nodes": out_nodes, "edges": edges, "legend": lg, "me": me_id, "generated_at": __import__("datetime").datetime.now().isoformat(timespec="minutes"), "swept_at": swept_at,
             "counts": {"work": sum(n["type"] == "work" for n in out_nodes), "systems": sum(n["type"] == "system" for n in out_nodes),
                        "people": sum(n["type"] == "person" for n in out_nodes), "prs": sum(n["type"] == "pr" for n in out_nodes), "edges": len(edges)}}
