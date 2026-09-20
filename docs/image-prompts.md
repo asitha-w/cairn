@@ -1,25 +1,25 @@
 # Image prompts
 
-Two images in the README. Regenerate with these prompts; keep the palette and typography of `cairn0.png`
+Two images in the README. Regenerate with these prompts; keep the palette and typography of `cairn-overview.png`
 (white background, slate text, navy line work, one orange accent, rounded cards, dashed group frames,
 monospace caption strip along the bottom).
 
-## cairn0.png — overview (refresh of the current image)
+## cairn-overview.png — overview
 
-Same composition as the existing image, three columns. Changes: the "Plain Markdown Files" chips read
+Three columns. The "Plain Markdown Files" chips read
 `work · systems · people · context lines → files outside`; remove `records` and `artifacts`. The crn
 chips read `find · open · pending · log · decide · priority · sweep · trail · graph`. Subtitle under the
 logo: "Persistent work memory for humans and coding agents". Keep everything else.
 
-## cairn1.png — structure (new)
+## cairn-two-layers.png — structure
 
-A clean architecture diagram, landscape 3:2, same style as cairn0.png. Title top-left: "Cairn · two
+A clean architecture diagram, landscape 3:2, same style as cairn-overview.png. Title top-left: "Cairn · two
 layers". Two horizontal bands stacked, labelled on the left edge.
 
 Band one, "LAYER 1 · THE GRAPH": a small network of nodes. Five to seven round navy nodes labelled
 `work/…` (for example `work/platform-431`), three larger light-blue nodes labelled `systems/database`,
 `systems/network`, `systems/monitoring`. Thin lines from each work node to one or two systems. One small
-violet node labelled `people/sam` with a violet line to one work node labelled "waits on". One ringed
+violet node labelled `people/cato` with a violet line to one work node labelled "waits on". One ringed
 violet node labelled `you` with lines coming in from two square nodes labelled `PR #894 · yours` and
 `PR #901 · review`. Caption under the band: "nodes and edges, what `crn find` and `crn graph` see".
 

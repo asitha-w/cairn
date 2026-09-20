@@ -1,178 +1,118 @@
 # Cairn
 
-Cairn gives coding agents persistent memory of your work across sessions, repositories and tools.
+**Persistent work memory for humans and coding agents.** Cairn keeps the state of ongoing work in a
+folder of plain Markdown: what is true, what comes next, what was decided, which systems are involved,
+who it waits on. Deterministic tools keep it current. A person or an agent picks any piece of work up
+again in one screen.
 
-A coding-agent session dies and its context dies with it. The next morning you pay the onboarding tax
-again: which issue was this, what did we decide, what did we actually run, who are we waiting on. Cairn
-keeps the answer in a folder of plain Markdown you own, updated by deterministic tools, read by you and
-by the agent in one screen. No database is the truth, no model is called, nothing leaves the machine.
+## Why
+
+A coding-agent session ends and its context ends with it. The next session starts with the same
+questions: which issue is this, what was decided, what was actually run, who is being waited on.
+Answering them means re-reading long notes, re-fetching GitHub state and re-summarising, every time.
+
+Cairn makes that a lookup. Each piece of work is one node with a one-sentence state and a resume point.
+Each system is one card with how to reach it and what has gone wrong before. Sessions append to the
+node's log by themselves; GitHub state is written once by a sweep. Opening a node costs about 700 tokens
+and loads nothing else.
 
 ## How it works
 
-<p align="center"><img src="docs/cairn0.png" alt="Cairn overview: your work from GitHub, Claude Code, your CLI and notes flows through crn and iwe into plain Markdown files, read back by humans and coding agents" width="900"></p>
+<p align="center"><img src="docs/cairn-overview.png" alt="Cairn overview: work from GitHub, coding-agent transcripts, the CLI and notes flows through crn and iwe into plain Markdown files, read by humans and coding agents" width="900"></p>
 
-Your work arrives from GitHub, from agent transcripts and from you. `crn` (the work verbs) and
-[`iwe`](https://github.com/iwe-org/iwe) (the graph engine) keep it as Markdown files. Humans read them in
-an editor or the local viewer; agents read them through the CLI, one node at a time.
+Work arrives from GitHub, from agent transcripts and from the person doing it. Two tools keep it:
+`crn`, the work verbs, and [`iwe`](https://github.com/iwe-org/iwe), the graph engine that indexes,
+searches, validates and edits the Markdown. Humans read the result in an editor or in the local viewer;
+agents read it through the same CLI, one node at a time. No database holds the truth, no model is
+called, nothing leaves the machine.
 
-<p align="center"><img src="docs/cairn1.png" alt="Cairn structure: layer one is a graph of work and system nodes; layer two is context on each node, inline in the body or lazy as one line pointing at a file outside the bundle" width="900"></p>
+<p align="center"><img src="docs/cairn-two-layers.png" alt="Cairn structure: layer one is a graph of work, system and people nodes; layer two is context on each node, inline in the body or lazy as one line pointing at a file outside the bundle" width="900"></p>
 
-Two layers. **Layer one is the graph**: work nodes (one piece of work each) linked to system nodes (one
-thing you operate each), with people as small nodes for whoever work waits on. **Layer two is context**
-and hangs off a node in two forms: *inline*, the node body, always loaded with it; and *lazy*, one line
-in the body that carries a finding in one sentence and the path of a file outside the bundle, read only
-when you or the agent are in doubt. Investigations, research, runbooks and plans stay where they are.
-Sessions feed a node's Log through a hook; the sweep feeds its GitHub fields. Opening a node costs about
-700 tokens and loads nothing else.
+**Layer one is the graph.** Work nodes, one per piece of work, linked to system nodes, one per thing
+operated. People are small nodes for whoever work waits on. The user is a node as well, with review
+requests, open pull requests and work that moved on GitHub hanging off it.
 
-```
-my-graph/
-  cairn.toml                 who you are: GitHub org and user, where transcripts live
-  work/platform-431.md       one piece of work: one-line state, Now, Next, Decisions, Context, Log
-  systems/database.md        one thing you operate: how to reach it, where its config lives, gotchas, runbooks
-  people/sam.md              someone work waits on
-```
+**Layer two is context**, in two forms. *Inline* context is the node body, always loaded with it:
+state, Now, Next, Decisions, Log. *Lazy* context is one line in the body carrying a finding in one
+sentence and the path of a file that lives outside the bundle, read only when something needs checking.
+Investigations, research and runbooks stay where they are. Files outside the bundle are never indexed,
+so nothing is loaded by accident.
 
-Every file is an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)
-concept: YAML frontmatter plus markdown, linked with ordinary markdown links. The full session flow,
-step by step, is in [docs/how-it-works.md](docs/how-it-works.md).
+## What it gives
 
-## Guide
+- **Resume in one screen.** `crn open 431` returns state, resume point, next steps, decisions and the
+  last sessions. No note re-reading, no re-fetching.
+- **Nothing lost when a session dies.** A hook folds every session into the node's Log from the
+  transcript: date, session id, call count, the commands that ran.
+- **GitHub state written once.** The sweep refreshes `gh_*` fields, lists issues without a node, pull
+  requests waiting for review and open pull requests, and proposes priorities from configured words.
+- **Findings that stay findable.** A one-sentence Context line on the node is enough for search to hit
+  it; the full file is one path away.
+- **A picture at zero tokens.** The local viewer groups by repo, system, stage, priority or people,
+  ranks what to start now with visible reasons, and copies the one `crn open` line for the agent.
+- **Files you own.** Plain Markdown with YAML frontmatter, valid
+  [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md),
+  readable and editable with any tool.
 
-### Install and try
+## One protocol
+
+Everything is a CLI call. No MCP server, no tool schemas loaded per session, and every call lands in
+the transcript where the trail can see it. The line the design rests on: anything that changes an
+environment or code stays with the person or the agent under the person's permissions; anything
+mechanical and read-only belongs in a tool. `crn` never comments on GitHub, never touches a cluster,
+never writes outside the bundle.
+
+| Verb | Does | Writes |
+|---|---|---|
+| `crn find <words>` | ranked search over titles, state lines and bodies | no |
+| `crn open <node>` | one node with its links; a key, an issue number or a slug prefix | no |
+| `crn pending` | work in progress, by priority then stage | no |
+| `crn state` / `stage` / `priority` | set the one-line state, the stage, the priority level | the node |
+| `crn log` / `decide` | append a dated line under Log or Decisions | the node |
+| `crn sweep [--create]` | refresh GitHub fields, list what is new, rebuild the viewer | `gh_*`, `.cairn/` |
+| `crn trail` | fold new transcripts into Log | Log only |
+| `crn graph [--open]` | the local viewer; `--format json` or `gexf` for other tools | `.cairn/` only |
+| `crn validate` / `systems` / `init` / `doctor` | schema check; system counts; scaffold a bundle; check the wiring | no / no / a new bundle / no |
+
+Two writers never touch the same field. A person owns `state`, `stage`, `Now`, `Next`, `Decisions`,
+`Context` and `priority`. The producers own `gh_*` and `Log`. Schemas in `schemas/` are the contract and
+`crn validate` enforces it.
+
+## Quick start
 
 ```bash
 # iwe: prebuilt binaries at https://github.com/iwe-org/iwe/releases (or brew install iwe-org/iwe/iwe)
 git clone https://github.com/asitha-w/cairn && export PATH="$PWD/cairn/bin:$PATH"
-export CAIRN_BUNDLE=$PWD/cairn/examples/bundle      # the mock bundle: one org, five pieces of work
+export CAIRN_BUNDLE=$PWD/cairn/examples/bundle      # the example bundle: one org, five pieces of work
 crn pending
 crn find peering
 crn open 431
-crn sweep --fixture cairn/examples/github-fixture.json --create
 crn graph --open
 bash cairn/tests/selftest.sh                         # PASS/FAIL, no network
 ```
 
-Your own bundle: `crn init ~/my-graph` prints the steps and the Claude Code wiring; `crn doctor` tells
-you what is still missing. Then `crn sweep --create` seeds work nodes from your open GitHub issues, and
-you write one system node per thing you operate.
+A bundle of your own: `crn init ~/my-graph` scaffolds it and prints the wiring steps, including the
+Claude Code skill and the `/node` command. `crn doctor` reports what is still missing. `crn sweep
+--create` seeds work nodes from open GitHub issues; system nodes are written by hand, one per thing
+operated.
 
-### A day
-
-| Moment | You or the agent | What `crn` does |
-|---|---|---|
-| morning | `crn sweep`, `crn graph --open` | three `gh` searches, `gh_*` fields refreshed, priorities proposed from your words, the viewer rebuilt |
-| picking up | `crn find peering` then `crn open 431` | ranked state lines, then one node: header, state, Now, Next, Decisions, Context, Log, backlinks |
-| working | `gh`, `kubectl`, editors, under your permissions | nothing; the work is never `crn`'s business |
-| a milestone | `crn log 431 "…"`, `crn decide`, `crn state`, `crn stage`, `crn priority` | one guarded, schema-validated write inside the node |
-| closing | the SessionEnd hook runs `crn trail` | one Log line per session per node from the transcript, never prompts or output |
-
-### Verbs
-
-`crn --help` lists them, `crn <verb> --help` explains one, every read verb takes `--json`.
-
-| Verb | What it does | Writes |
-|---|---|---|
-| `crn find <words>` | ranked search over titles, state lines and bodies | no |
-| `crn open <node>` | one node with its links; `<node>` is a key, a bare issue number or a slug prefix | no |
-| `crn pending` | work whose stage is active, parked or blocked, by priority then stage | no |
-| `crn state` / `crn stage` / `crn priority` | set the one-line state, the stage, the priority level (your legend lives in `cairn.toml`) | the node |
-| `crn log` / `crn decide` | append a dated line under Log or Decisions | the node |
-| `crn sweep [--create]` | refresh `gh_*` fields; list issues without a node, PRs requesting your review, your open PRs; rebuild the viewer | `gh_*`, `.cairn/` |
-| `crn trail` | fold new Claude Code transcripts into Log | Log only |
-| `crn graph [--open]` | the local viewer, see below; `--format json` or `gexf` for other tools | `.cairn/` only |
-| `crn validate` / `crn systems` / `crn init` / `crn doctor` | schema check; systems with their work counts; scaffold a bundle; check the wiring | no / no / a new bundle / no |
-
-Two writers never touch the same field. You own `state`, `stage`, `Now`, `Next`, `Decisions`, `Context`,
-`priority`. The producers own `gh_*` and `Log`; the sweep may propose a priority and never overwrites yours.
-
-### The viewer
-
-One HTML file, no dependencies, zero tokens. Group into sub-graphs by repo, system, stage, priority
-(labelled with your legend's words) or people. Colour by priority or stage, size by activity. Click a
-node for its card and its neighbours; "copy for Claude" gives the one `crn open` line. You are a node
-too, ringed: PRs asking your review, your open PRs and work GitHub moved after your last update hang off
-it, so "group by people" shows what waits on whom and what waits on you. A list mode and a "what to start
-now" mode rank work by transparent rules and print the reason per row.
-
-### A work node
-
-```markdown
----
-type: work
-title: Peer the dev database cluster to the ops network
-state: "parked, waiting on Sam for the tier, the container CIDR and whether users are cluster-scoped"
-stage: parked                      # active | parked | blocked | done
-resource: https://github.com/acme/platform/issues/431
-env: [dev, ops]
-systems: [database, network]       # slugs of systems/*.md
-people: [sam]                      # slugs of people/*.md
-blocked_by: [work/platform-422]
-gh_state: open                     # written by crn sweep
-gh_updated: 2026-09-17T07:25:00Z   # written by crn sweep
-last_actor: me                     # written by crn sweep
-updated: 2026-09-18
----
-# Peer the dev database cluster to the ops network
-
-Systems: [Database cluster](../systems/database.md) · [Network](../systems/network.md) · waits on [Sam](../people/sam.md)
-
-## Now
-One dated paragraph: what is true. The resume point.
-## Next
-1. Numbered steps.
-## Decisions
-- 2026-09-17 one line per decision
-## Context
-- peering plan draft: subnets, NSGs and the order of operations → ../../files/platform-431/peering-plan-2026-09-16.md
-## Log
-- 2026-09-16 session 8ae135c0: 43 calls · `terraform plan` on the test project
-```
-
-The `state` line is what search shows and what you read first: one sentence that lets you decide
-whether to open the node. A finding that stays true after the work is done goes on the system node as a
-Gotcha; one whose depth is in a file becomes a Context line. Files live outside the bundle, so `iwe`
-never indexes them and they never appear in search or in the graph.
-
-### With a coding agent
-
-Everything is a CLI call: no MCP server, no tool schemas per session, and every call lands in the
-transcript where `crn trail` can see it. `skills/cairn/SKILL.md` is the Claude Code skill (the five moves
-and the rules); `commands/node.md` makes `/node 431` inject the node with zero tool calls. The rule the
-design rests on: **anything that changes an environment or code stays with the agent under your
-permissions; anything mechanical and read-only belongs in a tool.**
-
-### Layout
-
-```
-crn/cli.py       argparse front: one subcommand per verb
-crn/bundle.py    find the bundle, read cairn.toml, the iwe wrapper, resolve a node from what you typed
-crn/verbs.py     find, open, pending, systems, validate, state, stage, log, decide
-crn/github.py    sweep: the only code that talks to GitHub (read-only, via your gh login) or a fixture
-crn/trail.py     transcripts → Log
-crn/setup.py     init and doctor
-crn/graph.py     graph export: json, gexf, and the html viewer (crn/viewer.html)
-schemas/         work, system, person (iwe document schemas)
-examples/        the mock bundle, its lazy files, a GitHub fixture, a cairn.toml template
-skills/, commands/   the Claude Code skill and the /node command
-tests/selftest.sh    PASS/FAIL, no network
-```
+Step-by-step flow, the shape of a node and the code layout: [docs/how-it-works.md](docs/how-it-works.md).
 
 ## What Cairn is not
 
-- Not a task tracker. GitHub (or whatever you use) stays the system of record; a node points at it.
+- Not a task tracker. GitHub (or whatever is in use) stays the system of record; a node points at it.
 - Not agent memory in the chat sense. It holds work, systems and people, not conversation.
-- Not a database. For multi-hop queries build an index from `crn graph --format json` with an embedded
-  graph database such as [LadybugDB](https://ladybugdb.com/) and throw it away. The markdown stays the truth.
+- Not a database. For multi-hop queries, build an index from `crn graph --format json` with an embedded
+  graph database such as [LadybugDB](https://ladybugdb.com/) and discard it. The Markdown stays the truth.
 
 ## Status
 
-v0.4: two layers; the CLI with per-verb help and `--json`; `init`, `doctor`, `priority`, `graph` with the
-viewer; three schemas; the example bundle; the skill and command; the self-test. Not yet: `crn tidy` (the
-periodic weed-out report), a scheduled sweep, converters from other note formats.
+v0.4. Two layers; the CLI with per-verb help and `--json`; `init`, `doctor`, `priority`, `graph` with the
+viewer; three schemas; the example bundle; the Claude Code skill and command; the self-test. Not yet:
+`crn tidy` (a periodic weed-out report), a scheduled sweep, converters from other note formats.
 
 MIT.
 
 ---
 
-*Cairn is pronounced KAIRN. A cairn is the pile of stones on a hill path that lets you pick the route up again when the fog comes in.*
+*Cairn is pronounced KAIRN. A cairn is the pile of stones on a hill path that marks the route when the fog comes in.*

@@ -1,10 +1,10 @@
 ---
 type: person
-title: Sam
-handle: sam
+title: Cato
+handle: cato
 role: platform lead
 ---
-# Sam
+# Cato
 
 Owns the network and database decisions. Reviews infra PRs.
 

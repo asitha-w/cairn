@@ -6,20 +6,20 @@ stage: blocked
 resource: https://github.com/acme/manifests/issues/894
 env: [dev, prod, ops]
 systems: [monitoring]
-people: [sam]
+people: [cato]
 blocked_by: []
 gh_state: open
 gh_updated: 2026-09-12T10:00:00Z
-last_actor: sam
+last_actor: cato
 updated: 2026-09-07
 ---
 # Remove the retired event exporter
 
-Systems: [Monitoring stack](../systems/monitoring.md) · reviewer [Sam](../people/sam.md)
+Systems: [Monitoring stack](../systems/monitoring.md) · reviewer [Cato](../people/cato.md)
 
 ## Now
 
-2026-09-07. The exporter was replaced by the collector; two PRs remove its values files and its GitOps application. Sam requested changes on the manifests PR.
+2026-09-07. The exporter was replaced by the collector; two PRs remove its values files and its GitOps application. Cato requested changes on the manifests PR.
 
 ## Next
 
