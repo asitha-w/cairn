@@ -38,6 +38,7 @@ t "runbook line lives on the system"   bash -c "crn open systems/database | grep
 t "sweep refreshes the graph"         bash -c "rm -f $T/b/.cairn/graph.html; crn sweep --fixture $HERE/examples/github-fixture.json >/dev/null && test -f $T/b/.cairn/graph.html"
 t "graph html embeds data"            bash -c "crn graph >/dev/null && grep -q '\"nodes\"' $T/b/.cairn/graph.html && ! grep -q 'GRAPH_JSON\*/null' $T/b/.cairn/graph.html"
 t "graph json has edges"              bash -c "crn graph --format json --include-done >/dev/null && python3 -c 'import json;g=json.load(open(\"$T/b/.cairn/graph.json\"));assert g[\"counts\"][\"edges\"]>3 and any(e[\"rel\"]==\"blocked_by\" for e in g[\"edges\"])'"
+t "graph has you as a node"          bash -c "crn graph --format json >/dev/null && python3 -c 'import json;g=json.load(open(\"$T/b/.cairn/graph.json\"));me=g[\"me\"];assert any(n[\"id\"]==me and n.get(\"me\") for n in g[\"nodes\"]);assert any(e[\"t\"]==me and e[\"rel\"] in (\"review\",\"yours\") for e in g[\"edges\"])'"
 t "graph gexf is xml"                 bash -c "crn graph --format gexf >/dev/null && head -1 $T/b/.cairn/graph.gexf | grep -q '<?xml'"
 t "unknown node exits 1"               bash -c "! crn open nothing-here-xyz"
 t "still valid after writes"           bash -c "crn validate | grep -qiv 'error\|violation'"

@@ -1,6 +1,6 @@
 """graph.py — crn graph: export the bundle as a graph with its dimensions, and a single-file local viewer.
 
-Nodes: every work, system and person node with type, repo (from the resource URL), stage, priority, env, systems,
+Nodes: every work, system and person node (plus you, from cairn.toml github.user) with type, repo (from the resource URL), stage, priority, env, systems,
 people, updated, log lines, state. Edges: frontmatter lists (systems, people, blocked_by) plus markdown links in the body
 to other nodes. Formats: json, gexf (Gephi / Gephi Lite), html (self-contained viewer, opens from file://).
 Writes under <bundle>/.cairn/ by default. Nothing leaves the machine.
@@ -76,8 +76,20 @@ def build(bundle, cfg, include_done=False):
                 out_nodes.append({"id": pid, "type": "pr", "role": role, "title": f"PR #{p['number']} {p['title']}", "repo": f"{p['owner']}/{p['repo']}",
                                   "updated": str(p.get("updated", ""))[:10], "url": p["url"], "state": None, "logs": 0, "env": [], "systems": [], "people": []})
                 for wk, rel in pr_targets(p): edges.append({"s": pid, "t": wk, "rel": rel})
+    # you: a person node (the real people/<user>.md if it exists), with what needs you hanging off it
+    me = (cfg.get("github") or {}).get("user") or "me"; me_id = f"people/{me}"
+    mine = next((n for n in out_nodes if n["id"] == me_id), None)
+    if mine is None:
+        mine = {"id": me_id, "type": "person", "title": f"you ({me})", "repo": None, "stage": None, "priority": None, "priority_label": None, "env": [],
+                "systems": [], "people": [], "updated": "", "gh_updated": "", "state": "", "logs": 0, "resource": None, "blocked_by": [], "unblocked": False, "gh_moved": False, "age": None}
+        out_nodes.append(mine)
+    mine["me"] = True
+    mine["state"] = mine.get("state") or "PRs waiting for your review, your open PRs, and work where GitHub moved after your last update"
+    for n in out_nodes:
+        if n["type"] == "pr": edges.append({"s": n["id"], "t": me_id, "rel": "review" if n["role"] == "review" else "yours"})
+        elif n["type"] == "work" and n.get("gh_moved") and n.get("stage") != "done": edges.append({"s": n["id"], "t": me_id, "rel": "needs_you"})
     ids = {n["id"] for n in out_nodes}
-    RANK = {"blocked_by": 0, "waits_on": 1, "is": 2, "for": 2, "informs": 2, "about": 3, "links": 4}
+    RANK = {"blocked_by": 0, "waits_on": 1, "review": 1, "needs_you": 1, "is": 2, "for": 2, "yours": 2, "informs": 2, "about": 3, "links": 4}
     merged = {}
     for e in edges:
         if e["s"] not in ids or e["t"] not in ids: continue
@@ -86,7 +98,7 @@ def build(bundle, cfg, include_done=False):
     edges = []
     for m in merged.values():
         m["rels"].sort(key=lambda r: RANK.get(r, 9)); m["rel"] = m["rels"][0]; edges.append(m)
-    return {"nodes": out_nodes, "edges": edges, "legend": lg, "generated_at": __import__("datetime").datetime.now().isoformat(timespec="minutes"), "swept_at": swept_at,
+    return {"nodes": out_nodes, "edges": edges, "legend": lg, "me": me_id, "generated_at": __import__("datetime").datetime.now().isoformat(timespec="minutes"), "swept_at": swept_at,
             "counts": {"work": sum(n["type"] == "work" for n in out_nodes), "systems": sum(n["type"] == "system" for n in out_nodes),
                        "people": sum(n["type"] == "person" for n in out_nodes), "prs": sum(n["type"] == "pr" for n in out_nodes), "edges": len(edges)}}
 
