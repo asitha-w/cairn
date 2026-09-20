@@ -47,6 +47,52 @@ What Cairn adds to the loop:
 | priorities live in someone's head | a field with your legend; the sweep proposes, you decide |
 | the picture is in the agent's context, at token cost | `crn graph` renders it locally for free |
 
+## A typical day, as a handshake
+
+```
+   you / Claude                                   crn (deterministic, no model)
+   ────────────                                   ─────────────────────────────
+   morning: "sweep"
+        crn sweep                   ────────►     gh search ×3: issues assigned to you, PRs asking
+                                                  your review, your PRs · match each issue to its
+                                                  node by URL · write gh_state / gh_updated /
+                                                  last_actor where they moved · propose a priority
+                                                  from your word lists · save .cairn/sweep.json
+                                    ◄────────     changed nodes · issues without a node · PR lists
+        crn graph --open            ────────►     read every node · edges from frontmatter and
+                                                  links · PRs from the last sweep · rank "what to
+                                                  start now" by fixed rules · write one HTML file
+                                    ◄────────     the picture, in your browser, zero tokens
+
+   "let's work on peering"
+        crn find peering            ────────►     iwe: BM25 over title and body + fuzzy on title
+                                                  and key, fused · filter to work/system/person
+                                    ◄────────     ranked nodes, one state line each
+        crn open 431                ────────►     resolve 431 → work/devops-431 (key, issue number,
+                                                  or slug prefix) · iwe retrieve · backlinks
+                                    ◄────────     header · state · Now · Next · Decisions ·
+                                                  Context · Log · linked from   (~700 tokens)
+        gh issue view 431           ────────►     (GitHub, read-only: verify the dated claim)
+        …work: kubectl, terraform, PRs…           never crn's business
+
+   a milestone lands
+        crn log 431 "NSGs applied"  ────────►     iwe update, expect exactly 1 node · append a
+        crn decide / state / stage                dated line under Log (or Decisions) · set the
+        crn priority 431 2                        field · stamp updated · schema-validated before
+                                                  anything is written
+                                    ◄────────     "work/devops-431: logged"
+
+   you close the session            ────────►     hook: crn trail · scan new transcripts under your
+                                                  prefix · a tool call names a node by key, slug or
+                                                  issue ref → that node · one Log line per session
+                                                  per node: date, id, call count, 3 command heads ·
+                                                  never tool output or prompts · idempotent
+```
+
+Everything on the left needs judgment, and every change to an environment or to code happens there
+under your permissions. Everything on the right is a script over your bundle: read-only toward GitHub,
+writes only inside the bundle, guarded by the schemas, and the same result every time for the same inputs.
+
 ## What it looks like
 
 ```
