@@ -11,6 +11,7 @@ EPILOG = """examples:
   crn priority                     the bundle's priority legend; crn priority 419 2 sets one
   crn sweep --create               refresh gh_* fields; create nodes for assigned issues that have none
   crn graph --open                 the picture: group by repo or system, colour by priority, click a node
+  crn tidy                         weekly: what has outgrown its shape, and what to do about it
   crn doctor                       what is missing on this machine
 
 The bundle is $CAIRN_BUNDLE, else the nearest parent of the cwd with cairn.toml.
@@ -71,6 +72,9 @@ def build():
     s.add_argument("--include-done", action="store_true", help="include work whose stage is done")
     s.add_argument("--open", action="store_true", help="open the html in the default browser")
 
+    s = add("tidy", "The periodic weed-out report, read-only: oversized nodes, long Logs, dangling or placeholder Context lines, work without systems, untriaged stubs, stage vs GitHub, quiet work, orphan systems, unused people. Thresholds in cairn.toml [tidy]; each finding says what to do.")
+    s.add_argument("--json", action="store_true"); s.add_argument("--all", action="store_true", help="every line, not the first eight per check")
+
     s = add("trail", "Fold new Claude Code transcripts into ## Log: one line per session per node it touched. Idempotent; run by the session-end hook.")
     s.add_argument("--dry-run", action="store_true", help="print the lines instead of writing them")
     return p
@@ -100,6 +104,8 @@ def main(argv=None):
             from .github import sweep; return sweep(bundle, cfg, a.fixture, a.create, a.json)
         if a.verb == "graph":
             from .graph import graph; return graph(bundle, cfg, a.format, a.out, a.include_done, a.open)
+        if a.verb == "tidy":
+            from .tidy import tidy; return tidy(bundle, cfg, a.json, a.all)
         if a.verb == "trail":
             from .trail import trail; return trail(bundle, cfg, a.dry_run)
     except CrnError as e:
