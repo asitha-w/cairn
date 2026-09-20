@@ -34,8 +34,8 @@ updated: 2026-09-15
 ## Context
 
 - pricing notes: the three models, the replay method and the per-account numbers shown at the demo → ../../files/product-419/pricing-notes.md
+- earlier Log, 1 session line(s) 2026-09-12 to 2026-09-12 → ../../files/product-419/log.md
 
 ## Log
 
-- 2026-09-12 session 914fa4fd: 53 calls · `make deploy` ×3 · replay script
 - 2026-09-15 session 2c1a77b0: 9 calls · demo prep

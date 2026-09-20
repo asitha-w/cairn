@@ -2,7 +2,7 @@
 
 Reads ~/.claude/projects/<prefix>*/*.jsonl (prefix from cairn.toml [trail]). A tool call belongs to a node when
 its input names the node's key, slug, issue ref or issue number. Keeps: date, session id, call count, up to
-three command heads. Never keeps tool output, prompts or file contents. Idempotent via .cairn/trail-state.json.
+two command heads. Never keeps tool output, prompts or file contents. Idempotent via .cairn/trail-state.json.
 """
 import json, os, re
 from pathlib import Path
@@ -56,7 +56,7 @@ def trail(bundle, cfg, dry_run=False):
         per, first = scan(p, pats)
         for k, heads in per.items():
             if k in logged.get(p.stem, []): continue
-            uniq = list(dict.fromkeys(heads))[-3:]
+            uniq = [h[6:] if h.startswith("bash: ") else h for h in dict.fromkeys(heads)][-2:]
             line = f"- {(first or '')[:10] or TODAY} session {p.stem[:8]}: {len(heads)} call(s) · " + " · ".join(f"`{h}`" for h in uniq)
             if dry_run: print(f"{k}: {line}")
             else:

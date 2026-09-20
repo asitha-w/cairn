@@ -113,11 +113,16 @@ def state(bundle, subject, text):
     print(f"{k}: state set"); return 0
 
 
-def stage(bundle, subject, value):
+def stage(bundle, cfg, subject, value):
     if value not in STAGES: die(f"stage must be one of {', '.join(STAGES)}")
     k = resolve(bundle, subject)
     iwe(bundle, "update", "-k", k, "--expect", "1", "--set", f"stage={value}", "--set", f"updated={TODAY}")
-    print(f"{k}: stage {value}"); return 0
+    print(f"{k}: stage {value}")
+    if value in ("parked", "done"):
+        from .roll import roll   # a parked or done node keeps one Log line: when it was last touched
+        try: roll(bundle, cfg, k)
+        except Exception as e: print(f"  (Log not rolled: {e})")
+    return 0
 
 
 def log(bundle, subject, text):

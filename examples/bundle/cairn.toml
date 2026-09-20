@@ -9,6 +9,9 @@ user = "me"
 transcripts = "~/.claude/projects"   # where Claude Code writes session transcripts
 prefix = "-home-me-work-vanaheim"    # encoded project dir prefix; only transcripts under it are folded into ## Log
 
+[files]
+dir = "../files"
+
 [tidy]
 max_tokens = 1000
 max_log = 15
