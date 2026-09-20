@@ -2,7 +2,7 @@
 # selftest.sh — does crn work end to end against the example bundle? PASS/FAIL + exit code. No network.
 set -u
 HERE=$(cd "$(dirname "$0")/.." && pwd); export PATH="$HERE/bin:$HOME/.local/bin:$PATH"
-T=$(mktemp -d); trap 'rm -rf "$T"' EXIT; cp -r "$HERE/examples/bundle" "$T/b"; export CAIRN_BUNDLE="$T/b"; fail=0
+T=$(mktemp -d); trap 'rm -rf "$T"' EXIT; cp -r "$HERE/examples/bundle" "$T/b"; cp -r "$HERE/examples/files" "$T/files"; export CAIRN_BUNDLE="$T/b"; fail=0
 t() { local name=$1; shift; if "$@" >/dev/null 2>&1; then echo "PASS $name"; else echo "FAIL $name"; fail=1; fi; }
 t "iwe on PATH"                        command -v iwe
 t "crn --version"                      bash -c "crn --version | grep -q '^crn 0'"
@@ -14,6 +14,8 @@ t "trail --dry-run runs"               bash -c "crn trail --dry-run | grep -q '^
 t "init scaffolds a bundle"            bash -c "crn init $T/fresh | grep -q 'bundle ready' && test -f $T/fresh/.hooks/session-end.sh && test -f $T/fresh/.iwe/schemas/work.yaml"
 t "doctor runs"                        bash -c "CAIRN_BUNDLE=$T/b crn doctor | grep -q '^RESULT'"
 t "bundle validates"                   bash -c "crn validate | grep -qiv 'error\|violation' "
+t "tidy: clean bundle has nothing to weed" bash -c "crn tidy | grep -q 'nothing to weed'"
+t "tidy finds a dangling Context line"   bash -c "sed -i '/^## Context/a - a finding → ../../files/missing.md' $T/b/work/platform-431.md && crn tidy | grep -q 'dangling' && crn tidy --json | python3 -c 'import json,sys;d=json.load(sys.stdin);assert d[\"total\"]>0 and \"dangling\" in d[\"findings\"]'"
 t "find by system alias"               bash -c "crn find peering | grep -q 'work/platform-431'"
 t "find by state words"                bash -c "crn find compact | grep -q 'platform-419'"
 t "open by number"                     bash -c "crn open 431 | grep -q '^## Now'"

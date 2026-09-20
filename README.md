@@ -72,6 +72,7 @@ never writes outside the bundle.
 | `crn sweep [--create]` | refresh GitHub fields, list what is new, rebuild the viewer | `gh_*`, `.cairn/` |
 | `crn trail` | fold new transcripts into Log | Log only |
 | `crn graph [--open]` | the local viewer; `--format json` or `gexf` for other tools | `.cairn/` only |
+| `crn tidy` | the weekly weed-out report, read-only: oversized nodes, long Logs, dangling or placeholder Context lines, untriaged stubs, stage vs GitHub, quiet work, orphan systems; each finding says what to do | no |
 | `crn validate` / `systems` / `init` / `doctor` | schema check; system counts; scaffold a bundle; check the wiring | no / no / a new bundle / no |
 
 Two writers never touch the same field. A person owns `state`, `stage`, `Now`, `Next`, `Decisions`,
@@ -107,9 +108,8 @@ Step-by-step flow, the shape of a node and the code layout: [docs/how-it-works.m
 
 ## Status
 
-v0.4. Two layers; the CLI with per-verb help and `--json`; `init`, `doctor`, `priority`, `graph` with the
-viewer; three schemas; the example bundle; the Claude Code skill and command; the self-test. Not yet:
-`crn tidy` (a periodic weed-out report), a scheduled sweep, converters from other note formats.
+v0.4. Two layers; the CLI with per-verb help and `--json`; `init`, `doctor`, `priority`, `tidy`, `graph` with the
+viewer; three schemas; the example bundle; the Claude Code skill and command; the self-test. Not yet: a scheduled sweep, converters from other note formats.
 
 MIT.
 

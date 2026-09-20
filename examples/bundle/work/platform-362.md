@@ -5,7 +5,8 @@ state: "decision taken: renew one year; figures reconciled; purchase is user-run
 stage: active
 resource: https://github.com/acme/platform/issues/362
 env: [prod]
-systems: []
+systems:
+- compute
 people: [alex]
 blocked_by: []
 gh_state: open
@@ -14,6 +15,8 @@ last_actor: alex
 updated: 2026-09-17
 ---
 # Reserved instances expire 2026-10-02 with auto-renew off
+
+[Compute](../systems/compute.md)
 
 Waits on [Alex](../people/alex.md) for the purchase.
 
