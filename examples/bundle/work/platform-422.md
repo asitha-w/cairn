@@ -1,39 +1,34 @@
 ---
 type: work
-title: Prove database network peering end to end on a test project
-state: "done: all proof rounds passed; close-out comment posted"
+title: Penetration-test remediation, spring report
+state: "done: all seven findings closed, retest passed, report filed as evidence"
 stage: done
-resource: https://github.com/acme/platform/issues/422
-env: [dev]
-systems: [database, network]
-people: []
+resource: https://github.com/vanaheim/platform/issues/422
+env: [prod]
+systems: [edge, order-api]
+people: [sindre]
 blocked_by: []
-gh_state: open
-gh_updated: 2026-09-16T13:00:00Z
-last_actor: me
-updated: 2026-09-16
+gh_state: closed
+gh_updated: 2026-08-30T09:00:00Z
+last_actor: sindre
+updated: 2026-08-30
 ---
-# Prove database network peering end to end on a test project
+# Penetration-test remediation, spring report
 
-Systems: [Database cluster](../systems/database.md) · [Network](../systems/network.md)
+[edge](../systems/edge.md) · [order-api](../systems/order-api.md) · signed off by [Sindre](../people/sindre.md)
 
 ## Now
 
-2026-09-16. Three proof rounds passed on a throwaway project: peering created from Terraform, routes visible both sides, a client in the ops network reached the cluster privately. Close-out comment posted; issue stays open until the parent decides.
+2026-08-30. Seven findings, two high, closed over six weeks. Retest passed on 2026-08-28. The report and retest letter are filed in the evidence store.
 
 ## Next
 
-1. Nothing; the parent (#431) carries the real work.
-
 ## Decisions
 
-- 2026-09-15 peer over private endpoints rather than a VPN, cost
+- 2026-07-20 the two high findings first, both on the edge; the rest in one PR per service
 
 ## Context
 
-- proof round log: three rounds, all passed → ../../files/platform-422/rounds.md
-
 ## Log
 
-- 2026-09-16 session 8ae135c0: 136 calls · `terraform apply` · `dig` from the ops client
-
+- 2026-08-28 session 5fec630f: 22 calls · retest coordination

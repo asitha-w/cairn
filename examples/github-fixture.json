@@ -1,77 +1,17 @@
 {
   "note": "Shape of what crn sweep reads: items = open issues assigned to you; prs_review = PRs requesting your review; prs_mine = your open PRs. Used with: crn sweep --fixture examples/github-fixture.json",
   "items": [
-    {
-      "owner": "acme",
-      "repo": "platform",
-      "number": 431,
-      "title": "Peer the dev database cluster to the ops network",
-      "state": "open",
-      "updated": "2026-09-18T07:25:00Z",
-      "last_actor": "cato",
-      "url": "https://github.com/acme/platform/issues/431"
-    },
-    {
-      "owner": "acme",
-      "repo": "platform",
-      "number": 419,
-      "title": "Compact the telemetry collection to reclaim freed space",
-      "state": "open",
-      "updated": "2026-09-17T15:00:00Z",
-      "last_actor": "me",
-      "url": "https://github.com/acme/platform/issues/419"
-    },
-    {
-      "owner": "acme",
-      "repo": "platform",
-      "number": 362,
-      "title": "Reserved instances expire 2026-10-02 with auto-renew off",
-      "state": "open",
-      "updated": "2026-09-16T09:00:00Z",
-      "last_actor": "alex",
-      "url": "https://github.com/acme/platform/issues/362"
-    },
-    {
-      "owner": "acme",
-      "repo": "manifests",
-      "number": 894,
-      "title": "Remove the retired event exporter",
-      "state": "open",
-      "updated": "2026-09-12T10:00:00Z",
-      "last_actor": "cato",
-      "url": "https://github.com/acme/manifests/issues/894"
-    },
-    {
-      "owner": "acme",
-      "repo": "platform",
-      "number": 512,
-      "title": "Alert on backup freshness for the object store",
-      "state": "open",
-      "updated": "2026-09-19T06:00:00Z",
-      "last_actor": "alex",
-      "url": "https://github.com/acme/platform/issues/512"
-    }
+    {"owner": "vanaheim", "repo": "product", "number": 431, "title": "order-api creates a second order on a client retry", "state": "open", "updated": "2026-09-18T07:25:00Z", "last_actor": "cato", "url": "https://github.com/vanaheim/product/issues/431"},
+    {"owner": "vanaheim", "repo": "product", "number": 419, "title": "Usage-based pricing prototype for the product owner", "state": "open", "updated": "2026-09-15T15:00:00Z", "last_actor": "me", "url": "https://github.com/vanaheim/product/issues/419"},
+    {"owner": "vanaheim", "repo": "platform", "number": 362, "title": "Upgrade both clusters to the next Kubernetes minor", "state": "open", "updated": "2026-09-16T09:00:00Z", "last_actor": "me", "url": "https://github.com/vanaheim/platform/issues/362"},
+    {"owner": "vanaheim", "repo": "platform", "number": 408, "title": "Rotate the VPN certificate authority and close the legacy SSO endpoint", "state": "open", "updated": "2026-09-14T10:00:00Z", "last_actor": "sindre", "url": "https://github.com/vanaheim/platform/issues/408"},
+    {"owner": "vanaheim", "repo": "compliance", "number": 377, "title": "ISO 27001 surveillance audit evidence pack", "state": "open", "updated": "2026-09-13T12:00:00Z", "last_actor": "me", "url": "https://github.com/vanaheim/compliance/issues/377"},
+    {"owner": "vanaheim", "repo": "compliance", "number": 512, "title": "Add the new payments vendor to the supplier register before the audit", "state": "open", "updated": "2026-09-19T06:00:00Z", "last_actor": "sindre", "url": "https://github.com/vanaheim/compliance/issues/512"}
   ],
   "prs_review": [
-    {
-      "owner": "acme",
-      "repo": "manifests",
-      "number": 901,
-      "title": "Bump collector chart to 4.2",
-      "state": "open",
-      "updated": "2026-09-19T08:00:00Z",
-      "url": "https://github.com/acme/manifests/pull/901"
-    }
+    {"owner": "vanaheim", "repo": "platform", "number": 455, "title": "Bump the ingress chart for the next Kubernetes minor (#362)", "state": "open", "updated": "2026-09-19T08:00:00Z", "url": "https://github.com/vanaheim/platform/pull/455"}
   ],
   "prs_mine": [
-    {
-      "owner": "acme",
-      "repo": "manifests",
-      "number": 894,
-      "title": "Remove the retired event exporter values",
-      "state": "open",
-      "updated": "2026-09-12T10:00:00Z",
-      "url": "https://github.com/acme/manifests/pull/894"
-    }
+    {"owner": "vanaheim", "repo": "product", "number": 440, "title": "fix(order-api): idempotency key on submit (#431)", "state": "open", "updated": "2026-09-17T16:00:00Z", "url": "https://github.com/vanaheim/product/pull/440"}
   ]
 }
