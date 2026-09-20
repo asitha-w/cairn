@@ -14,6 +14,12 @@ def find(bundle, words, as_json=False, limit=12):
     q = " ".join(words)
     rows = iwe_json(bundle, "find", "--lexical", q, "--fuzzy", q, "--limit", str(limit))
     hits = [{"key": key_of(n), "type": fm(n).get("type", "?"), "title": n.get("title", ""), "stage": fm(n).get("stage"), "state": fm(n).get("state")} for n in rows]
+    # iwe indexes bodies, not frontmatter: a system whose aliases name the query is a hit too, first
+    ql = [w.lower() for w in words]
+    for n in nodes(bundle, "type: system"):
+        al = [str(a).lower() for a in (fm(n).get("aliases") or [])] + [str(n.get("title", "")).lower(), key_of(n).split("/")[-1]]
+        if any(w == a or (len(w) > 3 and (w in a or a in w)) for w in ql for a in al) and key_of(n) not in {h["key"] for h in hits}:
+            hits.insert(0, {"key": key_of(n), "type": "system", "title": n.get("title", ""), "stage": None, "state": fm(n).get("access")})
     if not hits:
         print("no matches" if not as_json else "[]"); return 1
     def render(hs):

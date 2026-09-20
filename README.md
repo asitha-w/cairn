@@ -7,9 +7,12 @@ again in one screen.
 
 ## Why
 
-A coding-agent session ends and its context ends with it. The next session starts with the same
-questions: which issue is this, what was decided, what was actually run, who is being waited on.
-Answering them means re-reading long notes, re-fetching GitHub state and re-summarising, every time.
+Cairn is for the engineer whose work cuts across dimensions: a prototype for the product owner, a
+backend fix, a platform upgrade, a network-security change and an ISO audit in the same week, each with
+its own systems, its own people and its own half-finished thread. A coding-agent session ends and its
+context ends with it. The next session starts with the same questions: which issue is this, what was
+decided, what was actually run, who is being waited on. Answering them means re-reading long notes,
+re-fetching GitHub state and re-summarising, every time.
 
 Cairn makes that a lookup. Each piece of work is one node with a one-sentence state and a resume point.
 Each system is one card with how to reach it and what has gone wrong before. Sessions append to the
@@ -41,7 +44,7 @@ so nothing is loaded by accident.
 ## What it gives
 
 - **Resume in one screen.** `crn open 431` returns state, resume point, next steps, decisions and the
-  last sessions. No note re-reading, no re-fetching.
+  last sessions. No note re-reading, no re-fetching. Switching from the audit to the backend bug costs one call.
 - **Nothing lost when a session dies.** A hook folds every session into the node's Log from the
   transcript: date, session id, call count, the commands that ran.
 - **GitHub state written once.** The sweep refreshes `gh_*` fields, lists issues without a node, pull
@@ -81,12 +84,15 @@ Two writers never touch the same field. A person owns `state`, `stage`, `Now`, `
 
 ## Quick start
 
+One bundle is one scope: one company or one customer. Several scopes are several bundles, switched
+with `CAIRN_BUNDLE`, so every bundle stays small enough to open in one screen.
+
 ```bash
 # iwe: prebuilt binaries at https://github.com/iwe-org/iwe/releases (or brew install iwe-org/iwe/iwe)
 git clone https://github.com/asitha-w/cairn && export PATH="$PWD/cairn/bin:$PATH"
-export CAIRN_BUNDLE=$PWD/cairn/examples/bundle      # the example bundle: one org, five pieces of work
+export CAIRN_BUNDLE=$PWD/cairn/examples/bundle      # the example: one engineer, five dimensions, six pieces of work
 crn pending
-crn find peering
+crn find retry
 crn open 431
 crn graph --open
 bash cairn/tests/selftest.sh                         # PASS/FAIL, no network

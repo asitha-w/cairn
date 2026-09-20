@@ -70,7 +70,7 @@ def doctor(bundle_hint=None):
         _ok("bundle", False, "no cairn.toml found; crn init <dir>"); print("RESULT FAIL"); return 1
     import tomllib
     with open(b / "cairn.toml", "rb") as f: cfg = tomllib.load(f)
-    gh_ok = bool(cfg.get("github", {}).get("org")) and bool(cfg.get("github", {}).get("user")) and cfg["github"]["org"] != "acme"
+    gh_ok = bool(cfg.get("github", {}).get("org")) and bool(cfg.get("github", {}).get("user")) and cfg["github"]["org"] not in ("acme", "vanaheim")
     good &= _ok("cairn.toml [github]", gh_ok, "org + user set" if gh_ok else "edit org and user (still the template values)")
     tr_ok = bool(cfg.get("trail", {}).get("prefix")) and cfg["trail"]["prefix"] != "-home-me-work"
     good &= _ok("cairn.toml [trail]", tr_ok, cfg.get("trail", {}).get("prefix", "") if tr_ok else "set prefix to your encoded project dir")

@@ -1,7 +1,7 @@
 {
   "note": "Shape of what crn sweep reads: items = open issues assigned to you; prs_review = PRs requesting your review; prs_mine = your open PRs. Used with: crn sweep --fixture examples/github-fixture.json",
   "items": [
-    {"owner": "vanaheim", "repo": "product", "number": 431, "title": "order-api creates a second order on a client retry", "state": "open", "updated": "2026-09-18T07:25:00Z", "last_actor": "cato", "url": "https://github.com/vanaheim/product/issues/431"},
+    {"owner": "vanaheim", "repo": "product", "number": 431, "title": "order-api creates a second order on a client retry", "state": "open", "updated": "2026-09-18T09:40:00Z", "last_actor": "cato", "url": "https://github.com/vanaheim/product/issues/431"},
     {"owner": "vanaheim", "repo": "product", "number": 419, "title": "Usage-based pricing prototype for the product owner", "state": "open", "updated": "2026-09-15T15:00:00Z", "last_actor": "me", "url": "https://github.com/vanaheim/product/issues/419"},
     {"owner": "vanaheim", "repo": "platform", "number": 362, "title": "Upgrade both clusters to the next Kubernetes minor", "state": "open", "updated": "2026-09-16T09:00:00Z", "last_actor": "me", "url": "https://github.com/vanaheim/platform/issues/362"},
     {"owner": "vanaheim", "repo": "platform", "number": 408, "title": "Rotate the VPN certificate authority and close the legacy SSO endpoint", "state": "open", "updated": "2026-09-14T10:00:00Z", "last_actor": "sindre", "url": "https://github.com/vanaheim/platform/issues/408"},

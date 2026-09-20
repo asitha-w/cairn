@@ -12,7 +12,7 @@ finds the bundle from `$CAIRN_BUNDLE`. Every verb prints one screen; print it as
 
 | The user says | Run | Then |
 |---|---|---|
-| "let's work on peering" | `crn find peering` | one or more work nodes with their one-line state. If two are live, show the two state lines and ask which. |
+| "let's work on the double order" | `crn find retry` | one or more work nodes with their one-line state. If two are live, show the two state lines and ask which. |
 | picks one | `crn open work/<key>` | read Now and Next. Context lines are findings with a file path; read the file only when the user asks or the node and reality disagree. Do not read other nodes. |
 | we work | the work itself (gh, kubectl, editors) | anything that changes an environment or code stays with you and the user's permissions |
 | a milestone lands | `crn log <key> "what landed"`; a decision: `crn decide <key> "…"`; a new truth: `crn state <key> "one sentence"` | say that you recorded it |
