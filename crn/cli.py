@@ -4,7 +4,7 @@ from . import __version__
 from .bundle import find_bundle, config, CrnError
 
 EPILOG = """examples:
-  crn find peering                 ranked search over titles, state lines and bodies
+  crn find retry                   ranked search over titles, state lines and bodies
   crn open 431                     one node by issue number (also a key or a slug prefix)
   crn pending                      work whose stage is active, parked or blocked
   crn log 419 "compact pass A done on node 1"
@@ -35,7 +35,7 @@ def build():
     s = add("find", "Ranked search over nodes: BM25 on title and body fused with fuzzy title/key match. Work nodes show stage and state.")
     s.add_argument("words", nargs="+"); s.add_argument("--json", action="store_true"); s.add_argument("--limit", type=int, default=12)
 
-    s = add("open", "One node with its links. <node> is a key (work/platform-431), a bare issue number (431), owner/repo#n, or a slug prefix.")
+    s = add("open", "One node with its links. <node> is a key (work/product-431), a bare issue number (431), owner/repo#n, or a slug prefix.")
     s.add_argument("node"); s.add_argument("--json", action="store_true")
 
     s = add("pending", "Work nodes whose stage is active, parked or blocked: by priority (1 first, unset last), then stage, then most recently updated.")

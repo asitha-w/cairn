@@ -12,8 +12,8 @@ flowchart LR
     classDef store fill:#2a2415,stroke:#e0af68,color:#e6e6e6
     classDef ext fill:#2a1a1e,stroke:#f7768e,color:#e6e6e6
 
-    U(["you: let us work on peering"]):::human --> A1["agent turns words into a query"]:::agent
-    A1 -->|"crn find peering"| C1[["crn: lexical and fuzzy search"]]:::crn
+    U(["you: let us work on the double order"]):::human --> A1["agent turns words into a query"]:::agent
+    A1 -->|"crn find retry"| C1[["crn: lexical and fuzzy search"]]:::crn
     C1 <--> B[("bundle: work, systems, people")]:::store
     C1 -->|"one screen: nodes and state lines"| A2["agent picks, or asks which"]:::agent
     A2 -->|"crn open 431"| C2[["crn: node and links"]]:::crn
@@ -64,11 +64,11 @@ What Cairn adds to the loop:
                                                   start now" by fixed rules · write one HTML file
                                     ◄────────     the picture, in your browser, zero tokens
 
-   "let's work on peering"
-        crn find peering            ────────►     iwe: BM25 over title and body + fuzzy on title
+   "let's work on the double order"
+        crn find retry            ────────►     iwe: BM25 over title and body + fuzzy on title
                                                   and key, fused · filter to work/system/person
                                     ◄────────     ranked nodes, one state line each
-        crn open 431                ────────►     resolve 431 → work/devops-431 (key, issue number,
+        crn open 431                ────────►     resolve 431 → work/product-431 (key, issue number,
                                                   or slug prefix) · iwe retrieve · backlinks
                                     ◄────────     header · state · Now · Next · Decisions ·
                                                   Context · Log · linked from   (~700 tokens)
@@ -76,11 +76,11 @@ What Cairn adds to the loop:
         …work: kubectl, terraform, PRs…           never crn's business
 
    a milestone lands
-        crn log 431 "NSGs applied"  ────────►     iwe update, expect exactly 1 node · append a
+        crn log 362 "pool 1 rolled"    ────────►     iwe update, expect exactly 1 node · append a
         crn decide / state / stage                dated line under Log (or Decisions) · set the
         crn priority 431 2                        field · stamp updated · schema-validated before
                                                   anything is written
-                                    ◄────────     "work/devops-431: logged"
+                                    ◄────────     "work/platform-362: logged"
 
    you close the session            ────────►     hook: crn trail · scan new transcripts under your
                                                   prefix · a tool call names a node by key, slug or
@@ -97,28 +97,39 @@ writes only inside the bundle, guarded by the schemas, and the same result every
 
 ```
 $ crn pending
-parked  work/platform-431   2026-09-18  parked, waiting on Cato for the tier, the container CIDR and whether users are cl
-active  work/platform-362   2026-09-17  decision taken: renew one year; figures reconciled; purchase is user-run before
-active  work/platform-419   2026-09-17  deletes done (5.6B documents); compact per node and the tier downsize remain
-blocked work/manifests-894  2026-09-07  two PRs open, changes requested on the manifests one; waiting on my rebase
+P2 active  work/compliance-377                2026-09-13  eleven of fourteen controls have dated evidence; waiting on Cato for the ac…
+P2 blocked work/platform-408                  2026-09-14  change prepared and reviewed; blocked on Sindre approving a maintenance win…
+   active  work/product-431                   2026-09-17  reproduced on staging with a throttled client; fix is the idempotency key i…
+   active  work/platform-362                  2026-09-16  staging upgraded and soaked a week; prod waits for the edge allowlist chang…
+   parked  work/product-419                   2026-09-15  prototype deployed to the lab and demoed; parked until Ingrid picks a meter…
 
-$ crn find peering
-system  systems/network      Network
-work    work/platform-431    Peer the dev database cluster to the ops network
-        parked · parked, waiting on Cato for the tier, the container CIDR …
+$ crn find retry
+work    work/product-431                   order-api creates a second order on a client retry
+        active · reproduced on staging with a throttled client; fix is the idempotency key in PR #440, wai…
+system  systems/order-api                  order-api
+work    work/platform-408                  Rotate the VPN certificate authority and close the legacy S…
+        blocked · change prepared and reviewed; blocked on Sindre approving a maintenance window, and on th…
 
 $ crn open 431
-work/platform-431 · parked · updated 2026-09-18 · gh open 2026-09-18 last cato
-state: parked, waiting on Cato for the tier, the container CIDR and whether users are cluster-scoped
-env dev, ops · systems database, network · people cato · blocked_by work/platform-422
-… the node's Now, Next, Decisions, Context, Log …
-linked from (2): work/platform-422 · systems/network
+work/product-431 · active · updated 2026-09-17 · gh open 2026-09-18 last cato
+state: reproduced on staging with a throttled client; fix is the idempotency key in PR #440, waiting on Cato's review
+env staging, prod · systems order-api, ci · people cato
 
-$ crn log 419 "compact pass A done on node 1"
+… the node's Now, Next, Decisions, Context, Log …
+
+$ crn log 362 "prod pool 1 rolled, runners back"
+work/platform-362: logged
 $ crn sweep
-sweep: 5 items · 1 node(s) updated · 1 without a node
-  updated work/platform-431: gh_state=open gh_updated=2026-09-18
-  new     acme/platform#512 Alert on backup freshness for the object store
+sweep: 6 items · 1 node(s) updated · 1 without a node
+  updated work/product-431: gh_state=open gh_updated=2026-09-18
+  new     vanaheim/compliance#512 Add the new payments vendor to the supplier register before the audit
+review requested from you (1):
+  vanaheim/platform#455 Bump the ingress chart for the next Kubernetes minor (#362) · 2026-09-19
+your open PRs (1):
+  vanaheim/product#440 fix(order-api): idempotency key on submit (#431) · 2026-09-17
+
+$ crn tidy
+tidy 2026-09-20: 0 finding(s) over 6 work · 7 systems · 3 people · nothing to weed
 ```
 
 ## The shape of a work node
@@ -126,33 +137,45 @@ sweep: 5 items · 1 node(s) updated · 1 without a node
 ```markdown
 ---
 type: work
-title: Peer the dev database cluster to the ops network
-state: "parked, waiting on Cato for the tier, the container CIDR and whether users are cluster-scoped"
-stage: parked                      # active | parked | blocked | done
-resource: https://github.com/acme/platform/issues/431
-env: [dev, ops]
-systems: [database, network]       # slugs of systems/*.md
-people: [cato]                      # slugs of people/*.md
-blocked_by: [work/platform-422]
+title: order-api creates a second order on a client retry
+state: "reproduced on staging with a throttled client; fix is the idempotency key in PR #440, waiting on Cato's review"
+stage: active                      # active | parked | blocked | done
+resource: https://github.com/vanaheim/product/issues/431
+env: [staging, prod]
+systems: [order-api, ci]           # slugs of systems/*.md
+people: [cato]                     # slugs of people/*.md
+blocked_by: []
 gh_state: open                     # written by crn sweep
-gh_updated: 2026-09-17T07:25:00Z   # written by crn sweep
-last_actor: me                     # written by crn sweep
-updated: 2026-09-18
+gh_updated: 2026-09-18T07:25:00Z   # written by crn sweep
+last_actor: cato                   # written by crn sweep
+updated: 2026-09-17
 ---
-# Peer the dev database cluster to the ops network
+# order-api creates a second order on a client retry
 
-Systems: [Database cluster](../systems/database.md) · [Network](../systems/network.md) · waits on [Cato](../people/cato.md)
+[order-api](../systems/order-api.md) · [ci](../systems/ci.md) · reviewer [Cato](../people/cato.md)
 
 ## Now
-One dated paragraph: what is true. The resume point.
+
+2026-09-17. Two customers reported double orders after a slow checkout. Reproduced on staging by throttling the client to 3G: the retry lands after the first request has committed. PR #440 adds an idempotency key on submit and a 24-hour dedupe table. Cato has the review.
+
 ## Next
-1. Numbered steps.
+
+1. Address Cato's review, merge, let CI take it to staging.
+2. Replay the two customer cases against staging before the prod deploy.
+3. Prod deploy through the release environment; watch the duplicate-order metric for a day.
+
 ## Decisions
-- 2026-09-17 one line per decision
+
+- 2026-09-17 dedupe on an idempotency key, not on payload hash: two identical orders in a row are legal
+
 ## Context
-- peering plan draft: subnets, NSGs and the order of operations → ../../files/platform-431/peering-plan-2026-09-16.md
+
+- reproduction log: the throttled-client steps, the two requests and the timestamps → ../../files/product-431/repro-2026-09-17.md
+
 ## Log
-- 2026-09-16 session 8ae135c0: 43 calls · `terraform plan` on the test project
+
+- 2026-09-16 session 8ae135c0: 43 calls · `kubectl -n orders logs` · `make test`
+- 2026-09-17 session e1d9e214: 19 calls · `gh pr create` · `curl` against staging
 ```
 
 The `state` line is what search shows and what you read first: one sentence that lets you decide

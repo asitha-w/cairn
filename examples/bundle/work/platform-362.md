@@ -1,43 +1,37 @@
 ---
 type: work
-title: Reserved instances expire 2026-10-02 with auto-renew off
-state: "decision taken: renew one year; figures reconciled; purchase is user-run before the cliff"
+title: Upgrade both clusters to the next Kubernetes minor
+state: "staging upgraded and soaked a week; prod waits for the edge allowlist change because the control plane IP moves"
 stage: active
-resource: https://github.com/acme/platform/issues/362
-env: [prod]
-systems:
-- compute
-people: [alex]
-blocked_by: []
+resource: https://github.com/vanaheim/platform/issues/362
+env: [staging, prod]
+systems: [cluster, ci]
+people: []
+blocked_by: [work/platform-408]
 gh_state: open
 gh_updated: 2026-09-16T09:00:00Z
-last_actor: alex
-updated: 2026-09-17
+last_actor: me
+updated: 2026-09-16
 ---
-# Reserved instances expire 2026-10-02 with auto-renew off
+# Upgrade both clusters to the next Kubernetes minor
 
-[Compute](../systems/compute.md)
-
-Waits on [Alex](../people/alex.md) for the purchase.
+[cluster](../systems/cluster.md) · [ci](../systems/ci.md) · blocked by [the edge change](platform-408.md)
 
 ## Now
 
-2026-09-17. Ten reservations lapse on 2026-10-02 and would fall to pay-as-you-go at about 9.7k a month more. The observer work found no better node type in the region; the decision is a one-year renewal.
+2026-09-16. Staging has run the new minor for seven days with no regressions; the runbook was written from that roll. Prod cannot follow until the edge allowlist includes the new control plane range, which is part of the VPN CA rotation window.
 
 ## Next
 
-1. Alex places the purchase before 2026-10-01.
-2. Confirm the new reservation ids on the issue.
+1. After platform-408 lands: update the allowlist, then roll prod one node pool at a time per the runbook.
+2. Verify CI runners reschedule after each pool.
 
 ## Decisions
 
-- 2026-09-10 one-year term, not three; the exchange rules change on 2027-02-01
+- 2026-09-10 one minor at a time, never two; the vendor supports skipping but the ingress chart does not
 
 ## Context
 
-- reservation plan: one-year term, figures reconciled → ../../files/platform-362/plan.md
-
 ## Log
 
-- 2026-09-17 session 047c5303: 12 calls · `az reservations` reads
-
+- 2026-09-09 session a91f0c22: 61 calls · `kubectl drain` ×4 · `kubectl get nodes -w`

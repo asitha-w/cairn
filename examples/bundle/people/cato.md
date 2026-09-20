@@ -6,5 +6,4 @@ role: platform lead
 ---
 # Cato
 
-Owns the network and database decisions. Reviews infra PRs.
-
+Reviews platform and backend PRs. Owns the access-review export the audit needs.

@@ -1,12 +1,12 @@
 # cairn.toml — lives at the bundle root; everything specific to you is here, nothing in the tool.
 
 [github]
-org = "acme"           # crn sweep searches: org:<org> is:open assignee:<user>
+org = "vanaheim"       # crn sweep searches: org:<org> is:open assignee:<user>
 user = "me"
 
 [trail]
 transcripts = "~/.claude/projects"   # where Claude Code writes session transcripts
-prefix = "-home-me-work"             # encoded project dir prefix; only transcripts under it are folded into ## Log
+prefix = "-home-me-work-vanaheim"    # encoded project dir prefix; only transcripts under it are folded into ## Log
 
 [tidy]
 # Thresholds for `crn tidy`. All optional; these are the defaults.

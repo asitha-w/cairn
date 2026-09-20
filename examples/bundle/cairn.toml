@@ -1,12 +1,21 @@
 # cairn.toml — lives at the bundle root; everything specific to you is here, nothing in the tool.
+# One bundle is one scope: one company or one customer. Several scopes are several bundles, switched with CAIRN_BUNDLE.
 
 [github]
-org = "acme"           # crn sweep searches: org:<org> is:open assignee:<user>
+org = "vanaheim"       # crn sweep searches: org:<org> is:open assignee:<user>
 user = "me"
 
 [trail]
 transcripts = "~/.claude/projects"   # where Claude Code writes session transcripts
-prefix = "-home-me-work-acme"             # encoded project dir prefix; only transcripts under it are folded into ## Log
+prefix = "-home-me-work-vanaheim"    # encoded project dir prefix; only transcripts under it are folded into ## Log
+
+[tidy]
+max_tokens = 1000
+max_log = 15
+quiet_active_days = 30
+parked_days = 90
+untriaged_days = 14
+placeholders = []
 
 [priority]
 # Your legend, 1 is highest. Rename, add or remove levels; the product only knows the count.
@@ -14,6 +23,6 @@ levels = ["Outage or special ask", "Security", "Cost", "Everything else"]
 
 [priority.match]
 # Words (regex alternatives) that let `crn sweep` propose a level from an issue's title and labels. Optional.
-"1" = ["outage", "incident", "\\bprod\\b", "production", "is down", "data loss"]
-"2" = ["security", "\\bcve\\b", "secret", "credential", "token", "firewall"]
+"1" = ["outage", "incident", "\\bprod\\b", "production", "is down", "data loss", "double"]
+"2" = ["security", "\\bcve\\b", "secret", "credential", "token", "firewall", "vpn", "sso", "audit"]
 "3" = ["cost", "reservation", "budget", "spend", "billing"]
