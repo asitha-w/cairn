@@ -2,9 +2,11 @@
 
 Reads ~/.claude/projects/<prefix>*/*.jsonl (prefix from cairn.toml [trail]). A tool call belongs to a node when
 its input names the node's key, slug, issue ref or issue number. Keeps: date, session id, call count, up to
-two command heads. Never keeps tool output, prompts or file contents. Idempotent via .cairn/trail-state.json.
+two command heads. Never keeps tool output, prompts or file contents. Idempotent via .cairn/trail-state.json, serialised by
+.cairn/trail.lock (the hook fires on every compaction and on session end; overlapping runs used to append the same line twice),
+and a line is never appended when the node already carries it.
 """
-import json, os, re
+import fcntl, json, os, re
 from pathlib import Path
 from .bundle import iwe, nodes, fm, key_of, die, TODAY
 from .github import ISSUE_URL
@@ -43,6 +45,10 @@ def trail(bundle, cfg, dry_run=False):
     tr = cfg.get("trail", {}); root = Path(os.path.expanduser(tr.get("transcripts", "~/.claude/projects"))); prefix = tr.get("prefix", "")
     if not prefix: die("cairn.toml needs [trail] prefix (the encoded project dir, e.g. -home-me-work-repo)")
     if not root.exists(): print(f"trail: {root} does not exist; nothing to fold"); return 0
+    (bundle / ".cairn").mkdir(exist_ok=True)
+    lock = open(bundle / ".cairn" / "trail.lock", "w")
+    try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError: print("trail: another trail is running; nothing to do"); return 0
     state_p = bundle / ".cairn" / "trail-state.json"
     state = json.loads(state_p.read_text()) if state_p.exists() else {"done": {}}
     logged = state["done"].setdefault("__logged__", {})
@@ -60,6 +66,8 @@ def trail(bundle, cfg, dry_run=False):
             line = f"- {(first or '')[:10] or TODAY} session {p.stem[:8]}: {len(heads)} call(s) · " + " · ".join(f"`{h}`" for h in uniq)
             if dry_run: print(f"{k}: {line}")
             else:
+                node_p = bundle / f"{k}.md"
+                if node_p.exists() and line in node_p.read_text(): logged.setdefault(p.stem, []).append(k); continue   # already there
                 iwe(bundle, "update", "-k", k, "--expect", "1", "--append", json.dumps({"$header": "Log", "content": line}))
                 logged.setdefault(p.stem, []).append(k)
             added += 1
