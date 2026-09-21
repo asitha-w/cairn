@@ -109,6 +109,7 @@ def _append(bundle, k, header, text):
 def state(bundle, subject, text):
     k = resolve(bundle, subject)
     if len(text) < 3: die("state needs a sentence")
+    if len(text) > 200: die(f"state is {len(text)} characters; the schema allows 200. One sentence: what is true right now")
     iwe(bundle, "update", "-k", k, "--expect", "1", "--set", f"state={json.dumps(text, ensure_ascii=False)}", "--set", f"updated={TODAY}")
     print(f"{k}: state set"); return 0
 

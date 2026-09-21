@@ -24,6 +24,7 @@ t "open shows backlinks"               bash -c "crn open systems/order-api | gre
 t "pending excludes done"              bash -c "crn pending | grep -q product-431 && ! crn pending | grep -q platform-422"
 t "log appends under ## Log"           bash -c "crn log 419 'selftest line' && grep -q 'selftest line' $T/b/work/product-419.md && grep -q 'updated: $(date +%F)' $T/b/work/product-419.md"
 t "decide appends under ## Decisions"  bash -c "crn decide 431 'selftest decision' && awk '/^## Decisions/,/^## Context/' $T/b/work/product-431.md | grep -q 'selftest decision'"
+t "state refuses more than 200 chars"   bash -c "! crn state 362 \"$(printf 'x%.0s' {1..201})\" 2>/dev/null && crn validate | grep -q '^valid'"
 t "state sets one sentence"            bash -c "crn state 362 'selftest state' && grep -q 'state: selftest state' $T/b/work/platform-362.md"
 t "sweep updates gh fields (fixture)"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'updated work/product-431'"
 t "sweep lists issues without a node"  bash -c "crn sweep --fixture $HERE/examples/github-fixture.json | grep -q 'new .*compliance#512'"
